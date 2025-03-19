@@ -16,6 +16,51 @@
         <main>
             <div id="ingredients-tab" class="tab-content active">
                 <h2>Available Ingredients</h2>
+                
+                <div class="add-ingredient-container">
+                    <button id="show-add-form" class="primary-button">
+                        <span class="material-icons">add</span> Add New Ingredient
+                    </button>
+                    
+                    <div id="add-ingredient-form" class="hidden">
+                        <h3>Add New Ingredient</h3>
+                        <form id="ingredient-form">
+                            <div class="form-group">
+                                <label for="ingredient-name">Name*</label>
+                                <input type="text" id="ingredient-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-category">Category*</label>
+                                <select id="ingredient-category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Dairy">Dairy</option>
+                                    <option value="Meat">Meat</option>
+                                    <option value="Produce">Produce</option>
+                                    <option value="Grain">Grain</option>
+                                    <option value="Spice">Spice</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-quantity">Quantity*</label>
+                                <input type="number" id="ingredient-quantity" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-expiry">Expiry Date</label>
+                                <input type="date" id="ingredient-expiry">
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-brand">Brand</label>
+                                <input type="text" id="ingredient-brand">
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" id="cancel-add" class="secondary-button">Cancel</button>
+                                <button type="submit" class="primary-button">Save Ingredient</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
                 <div class="ingredients-grid" id="ingredients-list">
                     <!-- Ingredients will be dynamically populated here -->
                 </div>
