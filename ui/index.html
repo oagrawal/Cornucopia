@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Fridge Recipe Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Smart Fridge Recipe Assistant</h1>
+        </header>
+
+        <main>
+            <div id="ingredients-tab" class="tab-content active">
+                <h2>Available Ingredients</h2>
+                <div class="ingredients-grid" id="ingredients-list">
+                    <!-- Ingredients will be dynamically populated here -->
+                </div>
+            </div>
+
+            <div id="recipes-tab" class="tab-content">
+                <h2>Recommended Recipes</h2>
+                <div class="recipes-grid" id="recipes-list">
+                    <!-- Recipes will be dynamically populated here -->
+                </div>
+            </div>
+        </main>
+
+        <nav class="bottom-nav">
+            <button class="tab-button active" data-tab="ingredients-tab">
+                <span class="material-icons">kitchen</span>
+                <span>Ingredients</span>
+            </button>
+            <button class="tab-button" data-tab="recipes-tab">
+                <span class="material-icons">restaurant_menu</span>
+                <span>Recipes</span>
+            </button>
+        </nav>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
