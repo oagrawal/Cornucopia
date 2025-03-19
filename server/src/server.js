@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const ingredientRoutes = require('./routes/ingredientRoutes');
+require('dotenv').config();
+
+// Import database connection
+const db = require('./config/db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
