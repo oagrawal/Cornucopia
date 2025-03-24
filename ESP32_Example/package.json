@@ -1,0 +1,22 @@
+{
+  "name": "esp32-image-capture",
+  "version": "1.0.0",
+  "description": "ESP32-CAM image capture and server integration",
+  "main": "test_image_upload.js",
+  "scripts": {
+    "test": "node test_image_upload.js"
+  },
+  "keywords": [
+    "esp32",
+    "camera",
+    "ai",
+    "image-recognition"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.7",
+    "fs": "0.0.1-security",
+    "path": "^0.12.7"
+  }
+} 
