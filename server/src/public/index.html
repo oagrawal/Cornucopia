@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32-CAM Image Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .image-viewer {
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+      width: 100%;
+      max-width: 800px;
+    }
+    .image-container {
+      margin-top: 20px;
+      position: relative;
+      text-align: center;
+    }
+    #latest-image {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ddd;
+    }
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      width: 100%;
+      margin-top: 20px;
+    }
+    .image-item {
+      background: white;
+      padding: 10px;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+    .image-item:hover {
+      transform: scale(1.03);
+    }
+    .image-item img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .timestamp {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 5px;
+    }
+    .refresh-btn {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-top: 20px;
+    }
+    .refresh-btn:hover {
+      background-color: #45a049;
+    }
+    .empty-state {
+      padding: 40px;
+      text-align: center;
+      color: #666;
+    }
+    .loading {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(0,0,0,.1);
+      border-radius: 50%;
+      border-top-color: #4CAF50;
+      animation: spin 1s ease-in-out infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>ESP32-CAM Image Viewer</h1>
+    
+    <div class="image-viewer">
+      <h2>Latest Captured Image</h2>
+      <div class="image-container">
+        <img id="latest-image" src="" alt="Latest captured image">
+        <p id="latest-timestamp" class="timestamp"></p>
+      </div>
+      <button class="refresh-btn" onclick="refreshImages()">Refresh Images</button>
+    </div>
+    
+    <div class="image-grid" id="image-grid">
+      <div class="empty-state">
+        <div class="loading"></div>
+        <p>Loading images...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      refreshImages();
+    });
+
+    function refreshImages() {
+      // Fetch the list of images from the saved_images directory
+      fetch('/api/saved-images')
+        .then(response => response.json())
+        .then(data => {
+          updateImageGrid(data.images);
+          if (data.images.length > 0) {
+            // Update the latest image
+            updateLatestImage(data.images[0]);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching images:', error);
+          document.getElementById('image-grid').innerHTML = 
+            '<div class="empty-state"><p>Error loading images. Please try again later.</p></div>';
+        });
+    }
+
+    function updateImageGrid(images) {
+      const imageGrid = document.getElementById('image-grid');
+      
+      if (images.length === 0) {
+        imageGrid.innerHTML = '<div class="empty-state"><p>No images found. Capture an image from your ESP32-CAM.</p></div>';
+        return;
+      }
+      
+      let gridHtml = '';
+      
+      images.forEach(image => {
+        const timestamp = new Date(image.created).toLocaleString();
+        gridHtml += `
+          <div class="image-item">
+            <img src="${image.url}" alt="Captured image">
+            <p class="timestamp">${timestamp}</p>
+          </div>
+        `;
+      });
+      
+      imageGrid.innerHTML = gridHtml;
+    }
+
+    function updateLatestImage(image) {
+      document.getElementById('latest-image').src = image.url;
+      document.getElementById('latest-timestamp').textContent = 
+        `Captured: ${new Date(image.created).toLocaleString()}`;
+    }
+  </script>
+</body>
+</html> 

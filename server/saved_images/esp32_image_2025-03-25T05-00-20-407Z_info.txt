@@ -1,7 +1,0 @@
-Image captured: Tue Mar 25 2025 00:00:20 GMT-0500 (Central Daylight Time)
-Resolution: 320x240
-Original format: RGB565
-Original size: 153600 bytes
-Converted to: JPEG
-Temporary path: C:\Users\03123\OM\startup\JesterJumperJables\server\src\temp\44dbe244-6edd-4280-a455-9f0b9f65a11a.jpg
-Saved path: C:\Users\03123\OM\startup\JesterJumperJables\server\saved_images\esp32_image_2025-03-25T05-00-20-407Z.jpg

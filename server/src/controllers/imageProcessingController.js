@@ -47,108 +47,64 @@ const processImage = async (req, res) => {
       const width = parseInt(req.headers['x-image-width'] || '640');
       const height = parseInt(req.headers['x-image-height'] || '480');
       
-      // Ensure we have a proper Buffer
-      let imageBuffer;
-      if (Buffer.isBuffer(req.body)) {
-        imageBuffer = req.body;
-      } else if (req.body instanceof ArrayBuffer || ArrayBuffer.isView(req.body)) {
-        // Convert ArrayBuffer or TypedArray to Buffer
-        imageBuffer = Buffer.from(req.body);
-      } else if (typeof req.body === 'object') {
-        // Handle case where req.body might be a complex object
-        console.log('Received object data, attempting to convert...');
-        try {
-          // Convert to string and then to buffer as a fallback
-          imageBuffer = Buffer.from(JSON.stringify(req.body));
-        } catch (e) {
-          console.error('Failed to convert object to buffer:', e);
-          return res.status(400).json({ message: 'Invalid image data format' });
-        }
-      } else {
-        console.error('Unexpected body type:', typeof req.body);
-        return res.status(400).json({ message: 'Invalid image data format' });
+      console.log(`Received image request with format: ${imageFormat}, dimensions: ${width}x${height}`);
+      
+      // Check if we've received binary data
+      if (!Buffer.isBuffer(req.body)) {
+        console.error('Expected buffer but received:', typeof req.body);
+        return res.status(400).json({ message: 'Invalid image data: not a buffer' });
       }
       
-      console.log(`Received RGB565 image: ${width}x${height}, size: ${imageBuffer.length} bytes`);
+      const imageBuffer = req.body;
+      console.log(`Received RGB565 image data: ${imageBuffer.length} bytes`);
       
-      // Save raw data first
+      // Verify expected data size
+      const expectedSize = width * height * 2; // RGB565 uses 2 bytes per pixel
+      if (imageBuffer.length !== expectedSize) {
+        console.warn(`Warning: Image data size mismatch. Received: ${imageBuffer.length}, Expected: ${expectedSize}`);
+      }
+      
+      // Save raw data first for debugging
       const rawImagePath = path.join(TEMP_DIR, `${imageId}.raw`);
       fs.writeFileSync(rawImagePath, imageBuffer);
       console.log(`Raw data saved to ${rawImagePath}`);
       
-      // Analyze first few bytes for debug purposes
-      if (imageBuffer.length >= 10) {
-        const firstBytes = Array.from(imageBuffer.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join(' ');
-        console.log(`First 10 bytes: ${firstBytes}`);
-      }
-      
-      // Convert RGB565 to JPEG
       try {
+        // Convert RGB565 to JPEG
         imagePath = await convertRGB565ToJPEG(rawImagePath, width, height, imageId);
         
-        // Save a permanent copy of the converted image
+        // Create timestamp for filename
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filenameBase = `esp32_image_${timestamp}`;
         const savedImagePath = path.join(SAVED_IMAGES_DIR, `${filenameBase}.jpg`);
         
-        // Create metadata file first (so we have info even if image copy fails)
-        try {
-          const metadataPath = path.join(SAVED_IMAGES_DIR, `${filenameBase}_info.txt`);
-          const metadata = `Image captured: ${new Date().toString()}\n` +
-                         `Resolution: ${width}x${height}\n` +
-                         `Original format: RGB565\n` +
-                         `Original size: ${imageBuffer.length} bytes\n` +
-                         `Converted to: JPEG\n` +
-                         `Temporary path: ${imagePath}\n` +
-                         `Saved path: ${savedImagePath}\n`;
-          
-          fs.writeFileSync(metadataPath, metadata);
-          console.log(`Saved metadata to: ${metadataPath}`);
-        } catch (metaErr) {
-          console.error(`Failed to write metadata file: ${metaErr.message}`);
-        }
+        // Save metadata
+        const metadataPath = path.join(SAVED_IMAGES_DIR, `${filenameBase}_info.txt`);
+        const metadata = `Image captured: ${new Date().toString()}\n` +
+                       `Resolution: ${width}x${height}\n` +
+                       `Original format: RGB565\n` +
+                       `Original size: ${imageBuffer.length} bytes\n` +
+                       `Converted to: JPEG\n` +
+                       `Temporary path: ${imagePath}\n` +
+                       `Saved path: ${savedImagePath}\n`;
         
-        // Copy the image file
-        try {
-          fs.copyFileSync(imagePath, savedImagePath);
-          console.log(`Permanent copy saved to: ${savedImagePath}`);
-        } catch (copyErr) {
-          console.error(`Failed to save permanent copy: ${copyErr.message}`);
-        }
+        fs.writeFileSync(metadataPath, metadata);
+        console.log(`Saved metadata to: ${metadataPath}`);
         
-        // Delete raw file since we don't need it anymore
-        try {
-          fs.unlinkSync(rawImagePath);
-        } catch (deleteErr) {
-          console.error(`Failed to delete raw file: ${deleteErr.message}`);
-        }
+        // Save the converted image as a permanent copy
+        fs.copyFileSync(imagePath, savedImagePath);
+        console.log(`Permanent copy saved to: ${savedImagePath}`);
+        
+        // Clean up the raw file
+        fs.unlinkSync(rawImagePath);
       } catch (convError) {
         console.error('Error converting RGB565 to JPEG:', convError);
         
-        try {
-          // Fallback: Create a generic test image for AI processing
-          console.log('Attempting to create fallback image...');
-          imagePath = await createFallbackImage(imageId);
-          
-          // Save a permanent copy of the fallback image
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          const savedImagePath = path.join(SAVED_IMAGES_DIR, `esp32_fallback_${timestamp}.jpg`);
-          fs.copyFileSync(imagePath, savedImagePath);
-          console.log(`Permanent fallback copy saved to: ${savedImagePath}`);
-          
-          // Delete raw file
-          try {
-            fs.unlinkSync(rawImagePath);
-          } catch (deleteErr) {
-            console.error(`Failed to delete raw file: ${deleteErr.message}`);
-          }
-        } catch (fallbackError) {
-          console.error('Error creating fallback image:', fallbackError);
-          return res.status(500).json({
-            message: 'Error converting image format',
-            error: convError.message
-          });
-        }
+        // Return a meaningful error for debugging
+        return res.status(500).json({
+          message: 'Error converting image format',
+          error: convError.message
+        });
       }
     } else {
       // Standard JPEG image handling
@@ -164,9 +120,18 @@ const processImage = async (req, res) => {
     
     console.log(`Image saved to ${imagePath}`);
 
-    // Process the image with AI
+    // Process the image with AI or just return success
     try {
-      const result = await recognizeIngredientWithAI(imagePath);
+      // Optional AI processing - comment out if not needed
+      // const result = await recognizeIngredientWithAI(imagePath);
+      
+      // Simple success response with image details
+      const result = {
+        success: true,
+        message: 'Image received and processed successfully',
+        imageId: imageId,
+        timestamp: new Date().toISOString()
+      };
       
       // Clean up - remove only the temporary image file
       try {
@@ -178,7 +143,7 @@ const processImage = async (req, res) => {
       // Send the results back to the client
       res.status(200).json(result);
     } catch (error) {
-      console.error('Error processing image with AI:', error);
+      console.error('Error processing image:', error);
       res.status(500).json({ 
         message: 'Error processing image',
         error: error.message 
@@ -194,8 +159,7 @@ const processImage = async (req, res) => {
 };
 
 /**
- * Use a simpler approach to convert RGB565 data to a JPEG image
- * This function tries multiple interpretations of the data format
+ * Convert RGB565 data to a JPEG image using Jimp
  */
 const convertRGB565ToJPEG = async (rawImagePath, width, height, imageId) => {
   return new Promise((resolve, reject) => {
@@ -212,113 +176,58 @@ const convertRGB565ToJPEG = async (rawImagePath, width, height, imageId) => {
         const pixelCount = Math.min(Math.floor(rgb565Buffer.length / 2), width * height);
         console.log(`Processing ${pixelCount} pixels from a ${width}x${height} image`);
         
-        // Try different RGB565 conversion approaches
-        // ESP32-CAM often uses a specific layout for RGB565 that needs special handling
-        
-        // First analyze the image data
-        let totalPixelValue = 0;
-        let nonZeroPixels = 0;
-        for (let i = 0; i < Math.min(100, pixelCount); i++) {
-          const pos = i * 2;
-          if (pos + 1 < rgb565Buffer.length) {
-            const high = rgb565Buffer[pos+1];
-            const low = rgb565Buffer[pos];
-            if (high !== 0 || low !== 0) {
-              nonZeroPixels++;
-              totalPixelValue += high + low;
-            }
-          }
-        }
-        
-        console.log(`Data analysis: ${nonZeroPixels}/100 non-zero pixels, avg value: ${nonZeroPixels ? (totalPixelValue / nonZeroPixels).toFixed(2) : 0}`);
-        
-        // Option 1: Standard RGB565 format with proper scaling to RGB888
-        const useStandardConversion = true;
-        
-        // Use enhanced conversion for better color accuracy
+        // Convert RGB565 to RGB888 for each pixel
         for (let i = 0; i < pixelCount; i++) {
           const x = i % width;
           const y = Math.floor(i / width);
           const pos = i * 2;
           
-          // Standard format: RRRRRGGG GGGBBBBB (little-endian)
-          // Read as little-endian (lower byte first)
-          const high = rgb565Buffer[pos+1]; // Upper byte
-          const low = rgb565Buffer[pos];    // Lower byte
+          // RGB565 format: RRRRRGGG GGGBBBBB (little-endian)
+          const value = (rgb565Buffer[pos] | (rgb565Buffer[pos + 1] << 8));
           
-          if (useStandardConversion) {
-            // Enhanced conversion with better scaling from 5/6 bits to 8 bits
-            // Use bit shifting for most accurate conversion from RGB565 to RGB888
-            const r = ((high & 0xF8) >> 3) * 255 / 31;  // 5 bits for red (0-31)
-            const g = (((high & 0x07) << 3) | ((low & 0xE0) >> 5)) * 255 / 63; // 6 bits for green (0-63) 
-            const b = (low & 0x1F) * 255 / 31; // 5 bits for blue (0-31)
-            
-            try {
-              // Clamp values to valid range and round to integers
-              const red = Math.min(255, Math.max(0, Math.round(r)));
-              const green = Math.min(255, Math.max(0, Math.round(g)));
-              const blue = Math.min(255, Math.max(0, Math.round(b)));
-              
-              image.setPixelColor(Jimp.rgbaToInt(red, green, blue, 255), x, y);
-            } catch (pixelErr) {
-              // Use a neutral gray if there's an error
-              image.setPixelColor(Jimp.rgbaToInt(128, 128, 128, 255), x, y);
-            }
-          }
+          // Extract RGB components (5 bits R, 6 bits G, 5 bits B)
+          const r = ((value >> 11) & 0x1F) << 3; // 5 bits to 8 bits
+          const g = ((value >> 5) & 0x3F) << 2;  // 6 bits to 8 bits
+          const b = (value & 0x1F) << 3;         // 5 bits to 8 bits
+          
+          // Set pixel in the Jimp image
+          const pixelColor = Jimp.rgbaToInt(r, g, b, 255);
+          image.setPixelColor(pixelColor, x, y);
         }
         
-        // Basic image adjustments for better visibility
-        image.normalize() // Normalize colors for better contrast
-             .brightness(0.1) // Slightly increase brightness
-             .contrast(0.1);  // Slightly increase contrast
-        
-        // Save as JPEG with high quality
+        // Save as JPEG
         const jpegPath = path.join(TEMP_DIR, `${imageId}.jpg`);
-        image.quality(95).write(jpegPath, (err) => {
+        image.write(jpegPath, (err) => {
           if (err) return reject(err);
-          console.log(`Successfully converted RGB565 to JPEG: ${jpegPath}`);
+          console.log(`Converted RGB565 to JPEG: ${jpegPath}`);
           resolve(jpegPath);
         });
       });
     } catch (error) {
-      console.error('Error in RGB565 conversion:', error);
       reject(error);
     }
   });
 };
 
-/**
- * Create a simple fallback image for testing when conversion fails
- */
+// Only define the functions we'll actually use
 const createFallbackImage = async (imageId) => {
   return new Promise((resolve, reject) => {
-    try {
-      // Create a small test image
-      new Jimp(320, 240, 0xffffffff, (err, image) => {
-        if (err) return reject(err);
+    const image = new Jimp(640, 480, 0xFFFF0000, (err, image) => {
+      if (err) return reject(err);
+      
+      // Add some text
+      Jimp.loadFont(Jimp.FONT_SANS_16_WHITE).then(font => {
+        image.print(font, 10, 10, 'Fallback Image - ESP32 Image Processing Failed');
+        image.print(font, 10, 30, `Generated: ${new Date().toLocaleString()}`);
+        image.print(font, 10, 50, `ID: ${imageId}`);
         
-        // Draw a simple colored rectangle
-        for (let y = 40; y < 200; y++) {
-          for (let x = 60; x < 260; x++) {
-            // Make a gradient pattern
-            const r = Math.floor(255 * (x - 60) / 200);
-            const g = Math.floor(255 * (y - 40) / 160);
-            const b = 100;
-            image.setPixelColor(Jimp.rgbaToInt(r, g, b, 255), x, y);
-          }
-        }
-        
-        // Add some text (as a colored rectangle pattern)
-        const jpegPath = path.join(TEMP_DIR, `${imageId}.jpg`);
-        image.quality(90).write(jpegPath, (err) => {
+        const outputPath = path.join(TEMP_DIR, `${imageId}.jpg`);
+        image.write(outputPath, (err) => {
           if (err) return reject(err);
-          console.log(`Created fallback image: ${jpegPath}`);
-          resolve(jpegPath);
+          resolve(outputPath);
         });
-      });
-    } catch (error) {
-      reject(error);
-    }
+      }).catch(reject);
+    });
   });
 };
 
@@ -456,6 +365,9 @@ const callAIService = async (imagePath) => {
 };
 */
 
+// Export all the functions we'll use
 module.exports = {
-  processImage
+  processImage,
+  convertRGB565ToJPEG,
+  createFallbackImage
 }; 
