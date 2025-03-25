@@ -11,9 +11,9 @@
 // ===================
 // Network Config
 // ===================
-const char *ssid = "CityofIrving-Guest";
-const char *password = "";
-const char *serverEndpoint = "http://172.16.128.50:3000/api/image-processing";
+const char *ssid = "Lark Austin";
+const char *password = "uruuz3sh";
+const char *serverEndpoint = "http://100.70.68.40:3000/api/image-processing";
 
 // ===================
 // Hardware Pins
@@ -62,24 +62,49 @@ void initializeCamera()
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_RGB565;
 
-    // RGB565-specific configuration
-    config.frame_size = FRAMESIZE_SVGA; // 800x600 (works with RGB565)
-    config.fb_count = 1;
+    // Configuration for ESP32-CAM
+    config.frame_size = FRAMESIZE_VGA; // 640x480 (more stable than SVGA)
+    config.jpeg_quality = 12;          // Not used with RGB565, but set it anyway
+    config.fb_count = 2;               // Use 2 frame buffers for better stability
     config.fb_location = CAMERA_FB_IN_PSRAM;
-    config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+    config.grab_mode = CAMERA_GRAB_LATEST; // Get latest frame to avoid buffer overflow
 
     esp_err_t err = esp_camera_init(&config);
     if (err != ESP_OK)
     {
-        Serial.printf("Camera init failed: 0x%x", err);
+        Serial.printf("Camera init failed with error 0x%x", err);
         delay(1000);
         ESP.restart();
     }
 
-    // Additional sensor settings for RGB565
+    // Additional sensor settings
     sensor_t *s = esp_camera_sensor_get();
-    s->set_vflip(s, 1);   // Adjust if your image is flipped
-    s->set_hmirror(s, 1); // Adjust if needed
+    if (s)
+    {
+        // Lower saturation and brightness for better image quality
+        s->set_brightness(s, 0);                 // -2 to 2
+        s->set_contrast(s, 0);                   // -2 to 2
+        s->set_saturation(s, -1);                // -2 to 2
+        s->set_special_effect(s, 0);             // 0 = No Effect
+        s->set_whitebal(s, 1);                   // 1 = Enable auto white balance
+        s->set_awb_gain(s, 1);                   // 1 = Enable AWB gain
+        s->set_wb_mode(s, 0);                    // 0 = Auto mode
+        s->set_exposure_ctrl(s, 1);              // 1 = Enable auto exposure
+        s->set_aec2(s, 0);                       // 0 = Disable AEC DSP
+        s->set_gain_ctrl(s, 1);                  // 1 = Enable auto gain
+        s->set_agc_gain(s, 0);                   // 0 = No gain
+        s->set_gainceiling(s, (gainceiling_t)0); // 0 = 2x gain
+        s->set_bpc(s, 0);                        // 0 = Disable black pixel correction
+        s->set_wpc(s, 1);                        // 1 = Enable white pixel correction
+        s->set_raw_gma(s, 1);                    // 1 = Enable GMA
+        s->set_lenc(s, 1);                       // 1 = Enable lens correction
+        s->set_hmirror(s, 0);                    // 0 = No horizontal mirror
+        s->set_vflip(s, 0);                      // 0 = No vertical flip
+        s->set_dcw(s, 1);                        // 1 = Enable DCW
+        s->set_colorbar(s, 0);                   // 0 = Disable test pattern
+    }
+
+    Serial.println("Camera initialized successfully");
 }
 
 // ===================
@@ -91,12 +116,22 @@ void connectToWiFi()
     WiFi.setSleep(false);
 
     Serial.print("Connecting to WiFi");
-    while (WiFi.status() != WL_CONNECTED)
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) // Limit connection attempts
     {
         delay(500);
         Serial.print(".");
+        attempts++;
     }
-    Serial.println("\nConnected! IP: " + WiFi.localIP().toString());
+
+    if (WiFi.status() == WL_CONNECTED)
+    {
+        Serial.println("\nConnected! IP: " + WiFi.localIP().toString());
+    }
+    else
+    {
+        Serial.println("\nFailed to connect to WiFi! Continuing anyway...");
+    }
 }
 
 // ===================
@@ -107,44 +142,74 @@ void captureAndSendImage(bool useFlash = false)
     if (useFlash)
     {
         digitalWrite(FLASH_LED_PIN, HIGH);
-        delay(100);
+        delay(100); // Flash warm-up time
     }
 
+    // Get the camera frame buffer
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb)
     {
-        Serial.println("Capture failed");
+        Serial.println("Camera capture failed");
         return;
     }
 
+    // Turn off flash if it was on
     if (useFlash)
         digitalWrite(FLASH_LED_PIN, LOW);
 
+    // Print frame buffer info for debugging
+    Serial.printf("Image captured! Size: %d bytes, Format: %d, Width: %d, Height: %d\n",
+                  fb->len, fb->format, fb->width, fb->height);
+
+    // Check if we're connected to WiFi
     if (WiFi.status() == WL_CONNECTED)
     {
+        Serial.println("Sending image to server...");
+
         HTTPClient http;
         http.begin(serverEndpoint);
 
-        // Send as RGB565 raw data
+        // Add headers for RGB565 format
         http.addHeader("Content-Type", "application/octet-stream");
         http.addHeader("X-Image-Format", "RGB565");
-        http.addHeader("X-Image-Width", "800");
-        http.addHeader("X-Image-Height", "600");
+        http.addHeader("X-Image-Width", String(fb->width));
+        http.addHeader("X-Image-Height", String(fb->height));
 
+        // Send the data with a longer timeout
+        http.setTimeout(20000); // 20 seconds timeout for larger images
         int httpCode = http.POST(fb->buf, fb->len);
+
+        // Check HTTP response
         if (httpCode > 0)
         {
-            Serial.printf("HTTP Response: %d\n", httpCode);
-            Serial.println("Server Response: " + http.getString());
+            if (httpCode == HTTP_CODE_OK)
+            {
+                String response = http.getString();
+                Serial.printf("HTTP Success, code: %d\n", httpCode);
+                Serial.println("Server response: " + response);
+            }
+            else
+            {
+                Serial.printf("HTTP Request failed, error code: %d\n", httpCode);
+            }
         }
         else
         {
-            Serial.printf("HTTP Error: %d\n", httpCode);
+            Serial.printf("HTTP Error: %d - %s\n", httpCode, http.errorToString(httpCode).c_str());
         }
+
         http.end();
     }
+    else
+    {
+        Serial.println("WiFi disconnected, cannot send image");
+        // Try to reconnect
+        connectToWiFi();
+    }
 
+    // Return the frame buffer to be reused
     esp_camera_fb_return(fb);
+    Serial.println("Frame buffer released");
 }
 
 // ===================
@@ -154,16 +219,47 @@ void setup()
 {
     Serial.begin(115200);
     Serial.setDebugOutput(true);
+    Serial.println("ESP32-CAM Image Capture Starting...");
 
+    // Initialize flash LED
     pinMode(FLASH_LED_PIN, OUTPUT);
     digitalWrite(FLASH_LED_PIN, LOW);
 
+    // Initialize camera
     initializeCamera();
+
+    // Connect to WiFi
     connectToWiFi();
+
+    Serial.println("Setup complete!");
 }
 
 void loop()
 {
-    captureAndSendImage(true);
-    delay(60000);
+    static unsigned long lastCaptureTime = 0;
+    const unsigned long captureInterval = 10000; // 10 seconds
+
+    unsigned long currentTime = millis();
+
+    // Check if it's time to capture a new image
+    if (currentTime - lastCaptureTime >= captureInterval)
+    {
+        Serial.println("\n--- Starting new capture ---");
+        lastCaptureTime = currentTime;
+
+        // Make sure WiFi is still connected
+        if (WiFi.status() != WL_CONNECTED)
+        {
+            Serial.println("WiFi disconnected, reconnecting...");
+            connectToWiFi();
+        }
+
+        // Capture and send image (with flash)
+        captureAndSendImage(true);
+
+        Serial.println("--- Capture complete ---\n");
+    }
+
+    // Small delay to prevent watchdog timer issues
+    delay(100);
 }
