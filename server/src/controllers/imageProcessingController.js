@@ -8,10 +8,26 @@ require('dotenv').config();
 
 // Temporary directory for saving incoming images
 const TEMP_DIR = path.join(__dirname, '..', 'temp');
+// Permanent directory for saving image copies
+const SAVED_IMAGES_DIR = path.join(__dirname, '..', '..', 'saved_images');
 
-// Create temp directory if it doesn't exist
+// Create directories if they don't exist
 if (!fs.existsSync(TEMP_DIR)) {
-  fs.mkdirSync(TEMP_DIR, { recursive: true });
+  try {
+    fs.mkdirSync(TEMP_DIR, { recursive: true });
+    console.log(`Created temp directory: ${TEMP_DIR}`);
+  } catch (err) {
+    console.error(`Failed to create temp directory: ${err.message}`);
+  }
+}
+
+if (!fs.existsSync(SAVED_IMAGES_DIR)) {
+  try {
+    fs.mkdirSync(SAVED_IMAGES_DIR, { recursive: true });
+    console.log(`Created saved images directory: ${SAVED_IMAGES_DIR}`);
+  } catch (err) {
+    console.error(`Failed to create saved images directory: ${err.message}`);
+  }
 }
 
 /**
@@ -28,8 +44,8 @@ const processImage = async (req, res) => {
     
     if (imageFormat === 'RGB565') {
       // Get image dimensions from headers
-      const width = parseInt(req.headers['x-image-width'] || '800');
-      const height = parseInt(req.headers['x-image-height'] || '600');
+      const width = parseInt(req.headers['x-image-width'] || '640');
+      const height = parseInt(req.headers['x-image-height'] || '480');
       
       // Ensure we have a proper Buffer
       let imageBuffer;
@@ -69,8 +85,43 @@ const processImage = async (req, res) => {
       // Convert RGB565 to JPEG
       try {
         imagePath = await convertRGB565ToJPEG(rawImagePath, width, height, imageId);
-        // Delete the raw file after conversion
-        fs.unlinkSync(rawImagePath);
+        
+        // Save a permanent copy of the converted image
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filenameBase = `esp32_image_${timestamp}`;
+        const savedImagePath = path.join(SAVED_IMAGES_DIR, `${filenameBase}.jpg`);
+        
+        // Create metadata file first (so we have info even if image copy fails)
+        try {
+          const metadataPath = path.join(SAVED_IMAGES_DIR, `${filenameBase}_info.txt`);
+          const metadata = `Image captured: ${new Date().toString()}\n` +
+                         `Resolution: ${width}x${height}\n` +
+                         `Original format: RGB565\n` +
+                         `Original size: ${imageBuffer.length} bytes\n` +
+                         `Converted to: JPEG\n` +
+                         `Temporary path: ${imagePath}\n` +
+                         `Saved path: ${savedImagePath}\n`;
+          
+          fs.writeFileSync(metadataPath, metadata);
+          console.log(`Saved metadata to: ${metadataPath}`);
+        } catch (metaErr) {
+          console.error(`Failed to write metadata file: ${metaErr.message}`);
+        }
+        
+        // Copy the image file
+        try {
+          fs.copyFileSync(imagePath, savedImagePath);
+          console.log(`Permanent copy saved to: ${savedImagePath}`);
+        } catch (copyErr) {
+          console.error(`Failed to save permanent copy: ${copyErr.message}`);
+        }
+        
+        // Delete raw file since we don't need it anymore
+        try {
+          fs.unlinkSync(rawImagePath);
+        } catch (deleteErr) {
+          console.error(`Failed to delete raw file: ${deleteErr.message}`);
+        }
       } catch (convError) {
         console.error('Error converting RGB565 to JPEG:', convError);
         
@@ -78,7 +129,19 @@ const processImage = async (req, res) => {
           // Fallback: Create a generic test image for AI processing
           console.log('Attempting to create fallback image...');
           imagePath = await createFallbackImage(imageId);
-          fs.unlinkSync(rawImagePath);
+          
+          // Save a permanent copy of the fallback image
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const savedImagePath = path.join(SAVED_IMAGES_DIR, `esp32_fallback_${timestamp}.jpg`);
+          fs.copyFileSync(imagePath, savedImagePath);
+          console.log(`Permanent fallback copy saved to: ${savedImagePath}`);
+          
+          // Delete raw file
+          try {
+            fs.unlinkSync(rawImagePath);
+          } catch (deleteErr) {
+            console.error(`Failed to delete raw file: ${deleteErr.message}`);
+          }
         } catch (fallbackError) {
           console.error('Error creating fallback image:', fallbackError);
           return res.status(500).json({
@@ -91,6 +154,12 @@ const processImage = async (req, res) => {
       // Standard JPEG image handling
       imagePath = path.join(TEMP_DIR, `${imageId}.jpg`);
       fs.writeFileSync(imagePath, req.body);
+      
+      // Save a permanent copy of the JPEG image
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const savedImagePath = path.join(SAVED_IMAGES_DIR, `jpeg_image_${timestamp}.jpg`);
+      fs.copyFileSync(imagePath, savedImagePath);
+      console.log(`Permanent copy saved to: ${savedImagePath}`);
     }
     
     console.log(`Image saved to ${imagePath}`);
@@ -99,8 +168,12 @@ const processImage = async (req, res) => {
     try {
       const result = await recognizeIngredientWithAI(imagePath);
       
-      // Clean up - remove the temporary image file
-      fs.unlinkSync(imagePath);
+      // Clean up - remove only the temporary image file
+      try {
+        fs.unlinkSync(imagePath);
+      } catch (deleteErr) {
+        console.error(`Failed to delete temp file: ${deleteErr.message}`);
+      }
       
       // Send the results back to the client
       res.status(200).json(result);
@@ -137,91 +210,71 @@ const convertRGB565ToJPEG = async (rawImagePath, width, height, imageId) => {
         
         // Calculate how many pixels we can process
         const pixelCount = Math.min(Math.floor(rgb565Buffer.length / 2), width * height);
-        console.log(`Processing ${pixelCount} pixels`);
+        console.log(`Processing ${pixelCount} pixels from a ${width}x${height} image`);
         
-        // Try to detect if we need to swap bytes for endianness
-        let needsByteSwap = false;
+        // Try different RGB565 conversion approaches
+        // ESP32-CAM often uses a specific layout for RGB565 that needs special handling
         
-        // Sample the first few pixels to see if they make sense
-        // Reasonable RGB values should have some variation and not be all black or white
-        let testPixels = [];
-        for (let i = 0; i < Math.min(10, pixelCount); i++) {
+        // First analyze the image data
+        let totalPixelValue = 0;
+        let nonZeroPixels = 0;
+        for (let i = 0; i < Math.min(100, pixelCount); i++) {
           const pos = i * 2;
-          // Try little-endian (standard for most systems)
-          const pixelLE = (rgb565Buffer[pos+1] << 8) | rgb565Buffer[pos];
-          // Try big-endian
-          const pixelBE = (rgb565Buffer[pos] << 8) | rgb565Buffer[pos+1];
-          
-          testPixels.push({
-            le: {
-              r: ((pixelLE >> 11) & 0x1F),
-              g: ((pixelLE >> 5) & 0x3F),
-              b: (pixelLE & 0x1F)
-            },
-            be: {
-              r: ((pixelBE >> 11) & 0x1F),
-              g: ((pixelBE >> 5) & 0x3F),
-              b: (pixelBE & 0x1F)
+          if (pos + 1 < rgb565Buffer.length) {
+            const high = rgb565Buffer[pos+1];
+            const low = rgb565Buffer[pos];
+            if (high !== 0 || low !== 0) {
+              nonZeroPixels++;
+              totalPixelValue += high + low;
             }
-          });
+          }
         }
         
-        // Log some sample pixels for debugging
-        console.log("Sample pixels (first few):", 
-          testPixels.slice(0, 3).map(p => 
-            `LE: R${p.le.r},G${p.le.g},B${p.le.b} | BE: R${p.be.r},G${p.be.g},B${p.be.b}`
-          )
-        );
+        console.log(`Data analysis: ${nonZeroPixels}/100 non-zero pixels, avg value: ${nonZeroPixels ? (totalPixelValue / nonZeroPixels).toFixed(2) : 0}`);
         
-        // Try to determine if we need to swap bytes by checking which format has more variation
-        // (real images typically have some color variation)
-        let leVariation = 0, beVariation = 0;
-        for (let i = 1; i < testPixels.length; i++) {
-          leVariation += Math.abs(testPixels[i].le.r - testPixels[i-1].le.r) +
-                        Math.abs(testPixels[i].le.g - testPixels[i-1].le.g) +
-                        Math.abs(testPixels[i].le.b - testPixels[i-1].le.b);
-          
-          beVariation += Math.abs(testPixels[i].be.r - testPixels[i-1].be.r) +
-                        Math.abs(testPixels[i].be.g - testPixels[i-1].be.g) +
-                        Math.abs(testPixels[i].be.b - testPixels[i-1].be.b);
-        }
+        // Option 1: Standard RGB565 format with proper scaling to RGB888
+        const useStandardConversion = true;
         
-        // If big-endian variation is higher, use that format
-        needsByteSwap = beVariation > leVariation;
-        console.log(`Detected endianness: ${needsByteSwap ? 'Big-endian' : 'Little-endian'} (LE var: ${leVariation}, BE var: ${beVariation})`);
-        
-        // Process all pixels with the detected endianness
+        // Use enhanced conversion for better color accuracy
         for (let i = 0; i < pixelCount; i++) {
           const x = i % width;
           const y = Math.floor(i / width);
           const pos = i * 2;
           
-          let pixel;
-          if (needsByteSwap) {
-            // Big-endian
-            pixel = (rgb565Buffer[pos] << 8) | rgb565Buffer[pos+1];
-          } else {
-            // Little-endian
-            pixel = (rgb565Buffer[pos+1] << 8) | rgb565Buffer[pos];
-          }
+          // Standard format: RRRRRGGG GGGBBBBB (little-endian)
+          // Read as little-endian (lower byte first)
+          const high = rgb565Buffer[pos+1]; // Upper byte
+          const low = rgb565Buffer[pos];    // Lower byte
           
-          // Extract RGB components
-          const r = ((pixel >> 11) & 0x1F) * 8;
-          const g = ((pixel >> 5) & 0x3F) * 4;
-          const b = (pixel & 0x1F) * 8;
-          
-          // Set pixel safely
-          try {
-            image.setPixelColor(Jimp.rgbaToInt(r, g, b, 255), x, y);
-          } catch (pixelErr) {
-            // If there's an error with a specific pixel, use a default color
-            image.setPixelColor(Jimp.rgbaToInt(100, 100, 100, 255), x, y);
+          if (useStandardConversion) {
+            // Enhanced conversion with better scaling from 5/6 bits to 8 bits
+            // Use bit shifting for most accurate conversion from RGB565 to RGB888
+            const r = ((high & 0xF8) >> 3) * 255 / 31;  // 5 bits for red (0-31)
+            const g = (((high & 0x07) << 3) | ((low & 0xE0) >> 5)) * 255 / 63; // 6 bits for green (0-63) 
+            const b = (low & 0x1F) * 255 / 31; // 5 bits for blue (0-31)
+            
+            try {
+              // Clamp values to valid range and round to integers
+              const red = Math.min(255, Math.max(0, Math.round(r)));
+              const green = Math.min(255, Math.max(0, Math.round(g)));
+              const blue = Math.min(255, Math.max(0, Math.round(b)));
+              
+              image.setPixelColor(Jimp.rgbaToInt(red, green, blue, 255), x, y);
+            } catch (pixelErr) {
+              // Use a neutral gray if there's an error
+              image.setPixelColor(Jimp.rgbaToInt(128, 128, 128, 255), x, y);
+            }
           }
         }
         
-        // Save as JPEG
+        // Basic image adjustments for better visibility
+        image.normalize() // Normalize colors for better contrast
+             .brightness(0.1) // Slightly increase brightness
+             .contrast(0.1);  // Slightly increase contrast
+        
+        // Save as JPEG with high quality
         const jpegPath = path.join(TEMP_DIR, `${imageId}.jpg`);
-        image.quality(85).write(jpegPath, (err) => {
+        image.quality(95).write(jpegPath, (err) => {
           if (err) return reject(err);
           console.log(`Successfully converted RGB565 to JPEG: ${jpegPath}`);
           resolve(jpegPath);
