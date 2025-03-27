@@ -42,7 +42,7 @@ const processImage = async (req, res) => {
     // Check if the image is in RGB565 format (from ESP32-CAM)
     const imageFormat = req.headers['x-image-format'];
     
-    if (imageFormat === 'RGB565') {
+    if (false) { //imageFormat === 'RGB565' <-- original code
       // Get image dimensions from headers
       const width = parseInt(req.headers['x-image-width'] || '640');
       const height = parseInt(req.headers['x-image-height'] || '480');
@@ -161,53 +161,53 @@ const processImage = async (req, res) => {
 /**
  * Convert RGB565 data to a JPEG image using Jimp
  */
-const convertRGB565ToJPEG = async (rawImagePath, width, height, imageId) => {
-  return new Promise((resolve, reject) => {
-    try {
-      // Read the raw RGB565 data
-      const rgb565Buffer = fs.readFileSync(rawImagePath);
-      console.log(`RGB565 buffer length: ${rgb565Buffer.length}, expected: ${width * height * 2}`);
+// const convertRGB565ToJPEG = async (rawImagePath, width, height, imageId) => {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       // Read the raw RGB565 data
+//       const rgb565Buffer = fs.readFileSync(rawImagePath);
+//       console.log(`RGB565 buffer length: ${rgb565Buffer.length}, expected: ${width * height * 2}`);
       
-      // Create a new Jimp image
-      new Jimp(width, height, (err, image) => {
-        if (err) return reject(err);
+//       // Create a new Jimp image
+//       new Jimp(width, height, (err, image) => {
+//         if (err) return reject(err);
         
-        // Calculate how many pixels we can process
-        const pixelCount = Math.min(Math.floor(rgb565Buffer.length / 2), width * height);
-        console.log(`Processing ${pixelCount} pixels from a ${width}x${height} image`);
+//         // Calculate how many pixels we can process
+//         const pixelCount = Math.min(Math.floor(rgb565Buffer.length / 2), width * height);
+//         console.log(`Processing ${pixelCount} pixels from a ${width}x${height} image`);
         
-        // Convert RGB565 to RGB888 for each pixel
-        for (let i = 0; i < pixelCount; i++) {
-          const x = i % width;
-          const y = Math.floor(i / width);
-          const pos = i * 2;
+//         // Convert RGB565 to RGB888 for each pixel
+//         for (let i = 0; i < pixelCount; i++) {
+//           const x = i % width;
+//           const y = Math.floor(i / width);
+//           const pos = i * 2;
           
-          // RGB565 format: RRRRRGGG GGGBBBBB (little-endian)
-          const value = (rgb565Buffer[pos] | (rgb565Buffer[pos + 1] << 8));
+//           // RGB565 format: RRRRRGGG GGGBBBBB (little-endian)
+//           const value = (rgb565Buffer[pos] | (rgb565Buffer[pos + 1] << 8));
           
-          // Extract RGB components (5 bits R, 6 bits G, 5 bits B)
-          const r = ((value >> 11) & 0x1F) << 3; // 5 bits to 8 bits
-          const g = ((value >> 5) & 0x3F) << 2;  // 6 bits to 8 bits
-          const b = (value & 0x1F) << 3;         // 5 bits to 8 bits
+//           // Extract RGB components (5 bits R, 6 bits G, 5 bits B)
+//           const r = ((value >> 11) & 0x1F) << 3; // 5 bits to 8 bits
+//           const g = ((value >> 5) & 0x3F) << 2;  // 6 bits to 8 bits
+//           const b = (value & 0x1F) << 3;         // 5 bits to 8 bits
           
-          // Set pixel in the Jimp image
-          const pixelColor = Jimp.rgbaToInt(r, g, b, 255);
-          image.setPixelColor(pixelColor, x, y);
-        }
+//           // Set pixel in the Jimp image
+//           const pixelColor = Jimp.rgbaToInt(r, g, b, 255);
+//           image.setPixelColor(pixelColor, x, y);
+//         }
         
-        // Save as JPEG
-        const jpegPath = path.join(TEMP_DIR, `${imageId}.jpg`);
-        image.write(jpegPath, (err) => {
-          if (err) return reject(err);
-          console.log(`Converted RGB565 to JPEG: ${jpegPath}`);
-          resolve(jpegPath);
-        });
-      });
-    } catch (error) {
-      reject(error);
-    }
-  });
-};
+//         // Save as JPEG
+//         const jpegPath = path.join(TEMP_DIR, `${imageId}.jpg`);
+//         image.write(jpegPath, (err) => {
+//           if (err) return reject(err);
+//           console.log(`Converted RGB565 to JPEG: ${jpegPath}`);
+//           resolve(jpegPath);
+//         });
+//       });
+//     } catch (error) {
+//       reject(error);
+//     }
+//   });
+// };
 
 // Only define the functions we'll actually use
 const createFallbackImage = async (imageId) => {
@@ -368,6 +368,6 @@ const callAIService = async (imagePath) => {
 // Export all the functions we'll use
 module.exports = {
   processImage,
-  convertRGB565ToJPEG,
+  //convertRGB565ToJPEG,
   createFallbackImage
 }; 
