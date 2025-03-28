@@ -4,7 +4,10 @@ const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const FormData = require('form-data');
 const Jimp = require('jimp');
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Temporary directory for saving incoming images
 const TEMP_DIR = path.join(__dirname, '..', 'temp');
@@ -123,15 +126,15 @@ const processImage = async (req, res) => {
     // Process the image with AI or just return success
     try {
       // Optional AI processing - comment out if not needed
-      // const result = await recognizeIngredientWithAI(imagePath);
+      const result = await recognizeIngredientWithAI(imagePath);
       
       // Simple success response with image details
-      const result = {
-        success: true,
-        message: 'Image received and processed successfully',
-        imageId: imageId,
-        timestamp: new Date().toISOString()
-      };
+      // const result = {
+      //   success: true,
+      //   message: 'Image received and processed successfully',
+      //   imageId: imageId,
+      //   timestamp: new Date().toISOString()
+      // };
       
       // Clean up - remove only the temporary image file
       try {
@@ -158,58 +161,8 @@ const processImage = async (req, res) => {
   }
 };
 
-/**
- * Convert RGB565 data to a JPEG image using Jimp
- */
-// const convertRGB565ToJPEG = async (rawImagePath, width, height, imageId) => {
-//   return new Promise((resolve, reject) => {
-//     try {
-//       // Read the raw RGB565 data
-//       const rgb565Buffer = fs.readFileSync(rawImagePath);
-//       console.log(`RGB565 buffer length: ${rgb565Buffer.length}, expected: ${width * height * 2}`);
-      
-//       // Create a new Jimp image
-//       new Jimp(width, height, (err, image) => {
-//         if (err) return reject(err);
-        
-//         // Calculate how many pixels we can process
-//         const pixelCount = Math.min(Math.floor(rgb565Buffer.length / 2), width * height);
-//         console.log(`Processing ${pixelCount} pixels from a ${width}x${height} image`);
-        
-//         // Convert RGB565 to RGB888 for each pixel
-//         for (let i = 0; i < pixelCount; i++) {
-//           const x = i % width;
-//           const y = Math.floor(i / width);
-//           const pos = i * 2;
-          
-//           // RGB565 format: RRRRRGGG GGGBBBBB (little-endian)
-//           const value = (rgb565Buffer[pos] | (rgb565Buffer[pos + 1] << 8));
-          
-//           // Extract RGB components (5 bits R, 6 bits G, 5 bits B)
-//           const r = ((value >> 11) & 0x1F) << 3; // 5 bits to 8 bits
-//           const g = ((value >> 5) & 0x3F) << 2;  // 6 bits to 8 bits
-//           const b = (value & 0x1F) << 3;         // 5 bits to 8 bits
-          
-//           // Set pixel in the Jimp image
-//           const pixelColor = Jimp.rgbaToInt(r, g, b, 255);
-//           image.setPixelColor(pixelColor, x, y);
-//         }
-        
-//         // Save as JPEG
-//         const jpegPath = path.join(TEMP_DIR, `${imageId}.jpg`);
-//         image.write(jpegPath, (err) => {
-//           if (err) return reject(err);
-//           console.log(`Converted RGB565 to JPEG: ${jpegPath}`);
-//           resolve(jpegPath);
-//         });
-//       });
-//     } catch (error) {
-//       reject(error);
-//     }
-//   });
-// };
 
-// Only define the functions we'll actually use
+
 const createFallbackImage = async (imageId) => {
   return new Promise((resolve, reject) => {
     const image = new Jimp(640, 480, 0xFFFF0000, (err, image) => {
@@ -250,8 +203,8 @@ const recognizeIngredientWithAI = async (imagePath) => {
   // In a real implementation, you would send this image to an AI service
   // For example, with OpenAI's API:
   
-  // const result = await callAIService(imagePath);
-  const result = simulateAIResponse(imagePath);
+  const result = await callAIService(imagePath);
+  // const result = simulateAIResponse(imagePath);
   
   console.log('AI Processing result:', result);
   return result;
@@ -295,59 +248,31 @@ const simulateAIResponse = (imagePath) => {
   return mockResponses[randomIndex];
 };
 
-/**
- * For actual implementation, replace this with a real AI service call
- * Example with OpenAI's GPT-4 Vision API:
- */
-/*
+
 const callAIService = async (imagePath) => {
   try {
-    // Read image as base64
-    const imageBuffer = fs.readFileSync(imagePath);
-    const base64Image = imageBuffer.toString('base64');
-    
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: "gpt-4-vision-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Identify the ingredient in this image. Return a JSON object with the following fields: name, category, quantity, expiryDate (if visible, otherwise null), and brand (if visible, otherwise null)."
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 300
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+
+    const prompt = "Identify the ingredient in this image. Return a JSON object with the following fields: name, category, quantity, expiryDate (if visible, otherwise null), and brand (if visible, otherwise null).";
+
+    const imagePart = {
+      inlineData: {
+        data: Buffer.from(fs.readFileSync(imagePath)).toString("base64"),
+        mimeType: "image/jpeg"
       },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-        }
-      }
-    );
+    };
+
+    const generatedContent = await model.generateContent([prompt, imagePart]);
+    const response = generatedContent.response.text();
     
-    // Parse the response to get structured data
-    const aiResponse = response.data.choices[0].message.content;
     try {
-      // The AI response might be formatted as JSON or as text describing JSON
-      // Try to extract and parse the JSON
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-      const jsonStr = jsonMatch ? jsonMatch[0] : aiResponse;
+      // Try to parse the JSON response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : response;
       const result = JSON.parse(jsonStr);
       return result;
     } catch (error) {
-      console.error('Error parsing AI response:', error);
+      console.error('Error parsing Gemini response:', error);
       // Fallback if we can't parse the JSON
       return {
         name: 'Unknown',
@@ -355,19 +280,18 @@ const callAIService = async (imagePath) => {
         quantity: 0,
         expiryDate: null,
         brand: null,
-        rawResponse: aiResponse
+        rawResponse: response
       };
     }
   } catch (error) {
-    console.error('Error calling AI service:', error);
+    console.error('Error calling Gemini service:', error);
     throw error;
   }
 };
-*/
+
 
 // Export all the functions we'll use
 module.exports = {
   processImage,
-  //convertRGB565ToJPEG,
   createFallbackImage
 }; 
