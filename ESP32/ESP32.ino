@@ -13,9 +13,8 @@
 // ===================
 const char *ssid = "utexas-iot";
 const char *password = "10961394339849902023";
-const char *serverEndpoint = "http://10.159.64.188:3000/api/image-processing";
-String serverIP = "10.159.64.188"; // Hardcoded for simplicity
-
+const char *serverEndpoint = "http://10.159.65.78:3000/api/image-processing";
+String serverIP = "10.159.65.78"; // Hardcoded for simplicity
 
 // ===================
 // Hardware Pins
@@ -61,8 +60,8 @@ void initializeCamera()
     config.pin_sccb_scl = SIOC_GPIO_NUM;
     config.pin_pwdn = PWDN_GPIO_NUM;
     config.pin_reset = RESET_GPIO_NUM;
-    config.xclk_freq_hz = 20000000; //changed from 20000000 to 10000000 to try and fix EV-EOF error
-    //config.pixel_format = PIXFORMAT_RGB565;
+    config.xclk_freq_hz = 20000000; // changed from 20000000 to 10000000 to try and fix EV-EOF error
+    // config.pixel_format = PIXFORMAT_RGB565;
     config.pixel_format = PIXFORMAT_JPEG;
 
     // Configuration for ESP32-CAM
@@ -71,11 +70,11 @@ void initializeCamera()
     // config.frame_size = FRAMESIZE_XGA; // 1024x768
     // config.frame_size = FRAMESIZE_SXGA; // 1280x1024
 
-    config.jpeg_quality = 12;          // Not used with RGB565, but set it anyway
-    config.fb_count = 2;               // Use 2 frame buffers for better stability -> increase to 3 or 4 because 2 might be too less
+    config.jpeg_quality = 12; // Not used with RGB565, but set it anyway
+    config.fb_count = 2;      // Use 2 frame buffers for better stability -> increase to 3 or 4 because 2 might be too less
     config.fb_location = CAMERA_FB_IN_PSRAM;
-    //config.grab_mode = CAMERA_GRAB_LATEST; // Get latest frame to avoid buffer overflow
-    // Use WHEN_EMPTY to prevent frame tearing instead of grab latest
+    // config.grab_mode = CAMERA_GRAB_LATEST; // Get latest frame to avoid buffer overflow
+    //  Use WHEN_EMPTY to prevent frame tearing instead of grab latest
     config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
 
     esp_err_t err = esp_camera_init(&config);
@@ -111,10 +110,6 @@ void initializeCamera()
         s->set_vflip(s, 0);                      // 0 = No vertical flip
         s->set_dcw(s, 1);                        // 1 = Enable DCW
         s->set_colorbar(s, 0);                   // 0 = Disable test pattern
-
-
-        
-        
     }
 
     Serial.println("Camera initialized successfully");
@@ -147,68 +142,74 @@ void connectToWiFi()
     }
 }
 
-//tests networkconnection in the setup
-void testNetworkConnection() {
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("WiFi not connected, cannot test network");
-    return;
-  }
-  
-  Serial.println("\n--- Network Connection Test ---");
-  Serial.println("Performing ping test to server...");
-  
-  // Parse the server IP from the endpoint URL
-  //String serverIP = "10.4.143.246"; // Hardcoded for simplicity
-  
-  // Create a client to test TCP connection
-  WiFiClient client;
-  int port = 3000;
-  
-  Serial.printf("Testing TCP connection to %s:%d\n", serverIP.c_str(), port);
-  
-  unsigned long startTime = millis();
-  if (client.connect(serverIP.c_str(), port)) {
-    unsigned long connectionTime = millis() - startTime;
-    Serial.printf("Connection successful! Time: %lu ms\n", connectionTime);
-    client.stop();
-  } else {
-    Serial.println("TCP connection failed!");
-    Serial.println("Possible reasons:");
-    Serial.println(" - Server is not running");
-    Serial.println(" - Firewall is blocking connection");
-    Serial.println(" - Wrong IP address");
-  }
-  
-  // Print network information
-  Serial.printf("ESP32 IP: %s\n", WiFi.localIP().toString().c_str());
-  Serial.printf("Subnet mask: %s\n", WiFi.subnetMask().toString().c_str());
-  Serial.printf("Gateway: %s\n", WiFi.gatewayIP().toString().c_str());
-  Serial.printf("DNS: %s\n", WiFi.dnsIP().toString().c_str());
-  Serial.printf("Signal strength: %d dBm\n", WiFi.RSSI());
-  
-  Serial.println("--- Network Test Complete ---\n");
+// tests networkconnection in the setup
+void testNetworkConnection()
+{
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.println("WiFi not connected, cannot test network");
+        return;
+    }
+
+    Serial.println("\n--- Network Connection Test ---");
+    Serial.println("Performing ping test to server...");
+
+    // Parse the server IP from the endpoint URL
+    // String serverIP = "10.4.143.246"; // Hardcoded for simplicity
+
+    // Create a client to test TCP connection
+    WiFiClient client;
+    int port = 3000;
+
+    Serial.printf("Testing TCP connection to %s:%d\n", serverIP.c_str(), port);
+
+    unsigned long startTime = millis();
+    if (client.connect(serverIP.c_str(), port))
+    {
+        unsigned long connectionTime = millis() - startTime;
+        Serial.printf("Connection successful! Time: %lu ms\n", connectionTime);
+        client.stop();
+    }
+    else
+    {
+        Serial.println("TCP connection failed!");
+        Serial.println("Possible reasons:");
+        Serial.println(" - Server is not running");
+        Serial.println(" - Firewall is blocking connection");
+        Serial.println(" - Wrong IP address");
+    }
+
+    // Print network information
+    Serial.printf("ESP32 IP: %s\n", WiFi.localIP().toString().c_str());
+    Serial.printf("Subnet mask: %s\n", WiFi.subnetMask().toString().c_str());
+    Serial.printf("Gateway: %s\n", WiFi.gatewayIP().toString().c_str());
+    Serial.printf("DNS: %s\n", WiFi.dnsIP().toString().c_str());
+    Serial.printf("Signal strength: %d dBm\n", WiFi.RSSI());
+
+    Serial.println("--- Network Test Complete ---\n");
 }
 
-void checkMemory() {
-  Serial.println("\n--- Memory Status ---");
-  Serial.printf("Total heap: %d bytes\n", ESP.getHeapSize());
-  Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
-  Serial.printf("PSRAM size: %d bytes\n", ESP.getPsramSize());
-  Serial.printf("Free PSRAM: %d bytes\n", ESP.getFreePsram());
-  
-  // Calculate fragmentation
-  size_t minFreeBlock = ESP.getMinFreeHeap();
-  float fragmentation = 100 - (minFreeBlock * 100.0 / ESP.getFreeHeap());
-  Serial.printf("Heap fragmentation: %.2f%%\n", fragmentation);
-  
-  // Alert if memory is getting low
-  if (ESP.getFreeHeap() < 30000) {
-    Serial.println("WARNING: Memory is getting low!");
-  }
-  
-  Serial.println("--- End Memory Status ---\n");
-}
+void checkMemory()
+{
+    Serial.println("\n--- Memory Status ---");
+    Serial.printf("Total heap: %d bytes\n", ESP.getHeapSize());
+    Serial.printf("Free heap: %d bytes\n", ESP.getFreeHeap());
+    Serial.printf("PSRAM size: %d bytes\n", ESP.getPsramSize());
+    Serial.printf("Free PSRAM: %d bytes\n", ESP.getFreePsram());
 
+    // Calculate fragmentation
+    size_t minFreeBlock = ESP.getMinFreeHeap();
+    float fragmentation = 100 - (minFreeBlock * 100.0 / ESP.getFreeHeap());
+    Serial.printf("Heap fragmentation: %.2f%%\n", fragmentation);
+
+    // Alert if memory is getting low
+    if (ESP.getFreeHeap() < 30000)
+    {
+        Serial.println("WARNING: Memory is getting low!");
+    }
+
+    Serial.println("--- End Memory Status ---\n");
+}
 
 // ===================
 // Image Capture & Upload
@@ -241,16 +242,16 @@ void captureAndSendImage(bool useFlash = false)
     if (WiFi.status() == WL_CONNECTED)
     {
         Serial.println("Sending image to server...");
-        
-        //create new http client for each request
+
+        // create new http client for each request
         HTTPClient http;
         http.begin(serverEndpoint);
 
         // Add headers for RGB565 format
         // http.addHeader("Content-Type", "application/octet-stream");
         // http.addHeader("X-Image-Format", "RGB565");
-        
-        //replace rgb565 headers with following headers for jpeg version
+
+        // replace rgb565 headers with following headers for jpeg version
         http.addHeader("Content-Type", "image/jpeg");
         http.addHeader("X-Image-Format", "JPEG");
 
@@ -258,43 +259,44 @@ void captureAndSendImage(bool useFlash = false)
         http.addHeader("X-Image-Height", String(fb->height));
 
         // Send the data with a longer timeout
-        //http.setTimeout(20000); // 20 seconds timeout for larger images
-        //int httpCode = http.POST(fb->buf, fb->len);
-        
+        // http.setTimeout(20000); // 20 seconds timeout for larger images
+        // int httpCode = http.POST(fb->buf, fb->len);
+
         // Send the data with a longer timeout upated with better retry logic
         http.setTimeout(30000); // 30 seconds timeout for larger images. consider increasing even more
 
-        //Dynamically adjust timeout based on image size
-        // int timeout = max(30000, fb->len / 50); // Base timeout on image size (50 bytes/ms)
-        // http.setTimeout(timeout);
-        // Serial.printf("Setting timeout to %d ms for %d byte image\n", timeout, fb->len);
- 
+        // Dynamically adjust timeout based on image size
+        //  int timeout = max(30000, fb->len / 50); // Base timeout on image size (50 bytes/ms)
+        //  http.setTimeout(timeout);
+        //  Serial.printf("Setting timeout to %d ms for %d byte image\n", timeout, fb->len);
+
         // Add retry logic
         int maxRetries = 3;
         int retryCount = 0;
         int httpCode = -1;
 
-        while (retryCount < maxRetries && httpCode < 0) {
-            if (retryCount > 0) {
+        while (retryCount < maxRetries && httpCode < 0)
+        {
+            if (retryCount > 0)
+            {
                 Serial.printf("Retry attempt %d/%d...\n", retryCount, maxRetries);
                 delay(1000 * retryCount); // Progressive backoff
             }
-            
+
             httpCode = http.POST(fb->buf, fb->len);
-            
-            if (httpCode >= 0) {
+
+            if (httpCode >= 0)
+            {
                 break; // Success, exit retry loop
             }
-            
+
             retryCount++;
         }
 
-        if (httpCode < 0) {
-          Serial.println("All HTTP request attempts failed after maximum retries");
+        if (httpCode < 0)
+        {
+            Serial.println("All HTTP request attempts failed after maximum retries");
         }
-
-        
-
 
         // Check HTTP response
         if (httpCode > 0)
@@ -312,9 +314,9 @@ void captureAndSendImage(bool useFlash = false)
         }
         else
         {
-            //Serial.printf("HTTP Error: %d - %s\n", httpCode, http.errorToString(httpCode).c_str());
+            // Serial.printf("HTTP Error: %d - %s\n", httpCode, http.errorToString(httpCode).c_str());
 
-            //enhanced debug information
+            // enhanced debug information
             Serial.printf("HTTP Error: %d - %s\n", httpCode, http.errorToString(httpCode).c_str());
             Serial.printf("Trying to connect to: %s\n", serverEndpoint);
             Serial.printf("WiFi status: %d (Connected = %d)\n", WiFi.status(), WL_CONNECTED);
@@ -335,7 +337,7 @@ void captureAndSendImage(bool useFlash = false)
 
     // Return the frame buffer to be reused
     esp_camera_fb_return(fb);
-    delay(100); //added to fix buffer overflow errors 
+    delay(100); // added to fix buffer overflow errors
     Serial.println("Frame buffer released");
 }
 
@@ -358,31 +360,35 @@ void setup()
     // Connect to WiFi
     connectToWiFi();
 
-    //test network connection
+    // test network connection
     testNetworkConnection();
-    
-    //checks memory and heap stuff to rule out this as an issue
+
+    // checks memory and heap stuff to rule out this as an issue
     checkMemory();
 
     // Increase I2S buffer size to prevent overflow
     sensor_t *s = esp_camera_sensor_get();
-    if (s) {
+    if (s)
+    {
         s->set_framesize(s, FRAMESIZE_VGA); // Try VGA for more stability
-        
+
         // Add a small delay to let the camera initialize fully
         delay(500);
-        
+
         // Flush any existing frames
         camera_fb_t *fb = esp_camera_fb_get();
-        if (fb) {
+        if (fb)
+        {
             esp_camera_fb_return(fb);
         }
     }
 
     // Flush initial frames which might be corrupted
-    for (int i = 0; i < 3; i++) {
-        camera_fb_t* fb = esp_camera_fb_get();
-        if (fb) {
+    for (int i = 0; i < 3; i++)
+    {
+        camera_fb_t *fb = esp_camera_fb_get();
+        if (fb)
+        {
             esp_camera_fb_return(fb);
             delay(100);
         }
@@ -390,7 +396,6 @@ void setup()
 
     Serial.println("Setup complete!");
 }
-
 
 void loop()
 {
@@ -412,10 +417,10 @@ void loop()
             connectToWiFi();
         }
 
-        //checks memory real quick before capturing and sending image
+        // checks memory real quick before capturing and sending image
         checkMemory();
         // Capture and send image (with flash)
-        delay(200); //added to fix buffer overflow errors
+        delay(200); // added to fix buffer overflow errors
         captureAndSendImage(true);
 
         Serial.println("--- Capture complete ---\n");
