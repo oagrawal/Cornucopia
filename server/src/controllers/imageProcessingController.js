@@ -5,6 +5,7 @@ const axios = require('axios');
 const FormData = require('form-data');
 const Jimp = require('jimp');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const db = require('../config/db');
 require('dotenv').config();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -253,7 +254,15 @@ const callAIService = async (imagePath) => {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
-    const prompt = "Identify the ingredient in this image. Return a JSON object with the following fields: name, category, quantity, expiryDate (if visible, otherwise null), and brand (if visible, otherwise null).";
+    const prompt = `Analyze this image and identify any food ingredients or products. If a food item is found, return a JSON object with these fields:
+    - name (string): the name of the food item
+    - category (string): one of [Cooking Essentials, Condiments and Beverages, Dairy, Sliced/Pre-Prepared Raw Ingredients, Produce, Pantry, Other]
+    - quantity (number): estimated quantity, default to 1 if unclear
+    - expiry_date (string in YYYY-MM-DD format or null): if visible in image
+    - brand (string or null): if visible in image
+    - is_food (boolean): true if this is a food item, false otherwise
+
+    If no food item is found, return { "is_food": false, "description": "description of what you see" }`;
 
     const imagePart = {
       inlineData: {
@@ -270,17 +279,56 @@ const callAIService = async (imagePath) => {
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       const jsonStr = jsonMatch ? jsonMatch[0] : response;
       const result = JSON.parse(jsonStr);
-      return result;
-    } catch (error) {
-      console.error('Error parsing Gemini response:', error);
-      // Fallback if we can't parse the JSON
+
+      // If it's a food item, add it to the database
+      if (result.is_food) {
+        try {
+          // Prepare the ingredient data
+          const ingredientData = {
+            name: result.name,
+            category: result.category,
+            quantity: result.quantity || 1,
+            expiry_date: result.expiry_date || null,
+            brand: result.brand || null
+          };
+
+          // Insert into database
+          const dbResult = await db.query(
+            `INSERT INTO ingredients (name, category, quantity, expiry_date, brand) 
+             VALUES ($1, $2, $3, $4, $5) 
+             RETURNING *`,
+            [ingredientData.name, ingredientData.category, ingredientData.quantity, 
+             ingredientData.expiry_date, ingredientData.brand]
+          );
+
+          // Return combined result
+          return {
+            ...result,
+            database_operation: 'success',
+            saved_ingredient: dbResult.rows[0]
+          };
+        } catch (dbError) {
+          console.error('Error saving to database:', dbError);
+          return {
+            ...result,
+            database_operation: 'failed',
+            error: dbError.message
+          };
+        }
+      } else {
+        // If not a food item, just return the AI response
+        return {
+          is_food: false,
+          description: result.description || 'Not a food item',
+          raw_response: response
+        };
+      }
+    } catch (parseError) {
+      console.error('Error parsing Gemini response:', parseError);
       return {
-        name: 'Unknown',
-        category: 'Unknown',
-        quantity: 0,
-        expiryDate: null,
-        brand: null,
-        rawResponse: response
+        is_food: false,
+        error: 'Failed to parse AI response',
+        raw_response: response
       };
     }
   } catch (error) {
