@@ -13,8 +13,8 @@
 // ===================
 const char *ssid = "utexas-iot";
 const char *password = "10961394339849902023";
-const char *serverEndpoint = "http://10.159.65.78:3000/api/image-processing";
-String serverIP = "10.159.65.78"; // Hardcoded for simplicity
+const char *serverEndpoint = "http://10.159.66.67:3000/api/image-processing";
+String serverIP = "10.159.66.67"; // Hardcoded for simplicity
 
 // ===================
 // Hardware Pins
