@@ -45,7 +45,7 @@ ingredientForm.addEventListener('submit', async (e) => {
     const newIngredient = {
         name: document.getElementById('ingredient-name').value,
         category: document.getElementById('ingredient-category').value,
-        quantity: parseInt(document.getElementById('ingredient-quantity').value),
+        quantity: parseFloat(document.getElementById('ingredient-quantity').value),
         expiry_date: document.getElementById('ingredient-expiry').value || null,
         brand: document.getElementById('ingredient-brand').value || null
     };
@@ -89,46 +89,38 @@ function renderIngredients(ingredients) {
     `;
 
     const ingredientsHtml = ingredients.map(ingredient => {
-        // Handle database column naming which might use snake_case
-        const name = ingredient.name;
-        const category = ingredient.category;
-        const quantity = ingredient.quantity;
-        const unit = ingredient.unit || '';
-        const expiryDate = ingredient.expiry_date || ingredient.expiryDate;
-        const brand = ingredient.brand || 'N/A';
-
         return `
-        <div class="ingredient-card" data-name="${name}">
+        <div class="ingredient-card" data-id="${ingredient.id}">
             <div class="ingredient-content">
                 <div class="ingredient-field">
                     <span class="field-label">Name</span>
-                    <span class="field-value">${name}</span>
+                    <span class="field-value">${ingredient.name}</span>
                 </div>
                 <div class="ingredient-field">
                     <span class="field-label">Category</span>
-                    <span class="field-value ${category ? category.toLowerCase().replace(/\s+/g, '-') : ''}">${category || 'N/A'}</span>
+                    <span class="field-value ${ingredient.category ? ingredient.category.toLowerCase().replace(/\s+/g, '-') : ''}">${ingredient.category || 'N/A'}</span>
                 </div>
                 <div class="ingredient-field">
                     <span class="field-label">Quantity</span>
                     <span class="field-value">
                         <div class="quantity-controls">
-                            <button class="quantity-btn decrease-qty" data-name="${name}">-</button>
-                            <span>${quantity} ${unit}</span>
-                            <button class="quantity-btn increase-qty" data-name="${name}">+</button>
+                            <button class="quantity-btn decrease-qty" data-id="${ingredient.id}">-</button>
+                            <span>${ingredient.quantity}</span>
+                            <button class="quantity-btn increase-qty" data-id="${ingredient.id}">+</button>
                         </div>
                     </span>
                 </div>
                 <div class="ingredient-field">
                     <span class="field-label">Expiry Date</span>
-                    <span class="field-value">${formatDate(expiryDate)}</span>
+                    <span class="field-value">${formatDate(ingredient.expiry_date)}</span>
                 </div>
                 <div class="ingredient-field">
                     <span class="field-label">Brand</span>
-                    <span class="field-value">${brand}</span>
+                    <span class="field-value">${ingredient.brand || 'N/A'}</span>
                 </div>
             </div>
             <div class="ingredient-actions">
-                <button class="delete-button" data-name="${name}">
+                <button class="delete-button" data-id="${ingredient.id}">
                     <span class="material-icons">delete</span> Remove
                 </button>
             </div>
@@ -147,14 +139,12 @@ function attachIngredientEventListeners() {
     // Increase quantity buttons
     document.querySelectorAll('.increase-qty').forEach(button => {
         button.addEventListener('click', async () => {
-            const name = button.getAttribute('data-name');
-            const ingredient = currentIngredients.find(ing => ing.name === name);
+            const id = button.getAttribute('data-id');
+            const ingredient = currentIngredients.find(ing => ing.id === parseInt(id));
             if (ingredient) {
-                // Parse current quantity as integer and add 1
-                const newQuantity = parseInt(ingredient.quantity) + 1;
+                const newQuantity = parseFloat(ingredient.quantity) + 1;
                 try {
-                    await updateIngredient(name, { quantity: newQuantity });
-                    // Don't update local state here, let the fetchIngredients do it
+                    await updateIngredient(id, { quantity: newQuantity });
                     await fetchIngredients();
                 } catch (error) {
                     console.error('Error updating quantity:', error);
@@ -167,28 +157,25 @@ function attachIngredientEventListeners() {
     // Decrease quantity buttons
     document.querySelectorAll('.decrease-qty').forEach(button => {
         button.addEventListener('click', async () => {
-            const name = button.getAttribute('data-name');
-            const ingredient = currentIngredients.find(ing => ing.name === name);
+            const id = button.getAttribute('data-id');
+            const ingredient = currentIngredients.find(ing => ing.id === parseInt(id));
             
             if (ingredient) {
-                // Parse current quantity as integer
-                const currentQty = parseInt(ingredient.quantity);
+                const currentQty = parseFloat(ingredient.quantity);
                 
                 if (currentQty > 1) {
-                    // Decrement quantity if it's greater than 1
                     const newQuantity = currentQty - 1;
                     try {
-                        await updateIngredient(name, { quantity: newQuantity });
+                        await updateIngredient(id, { quantity: newQuantity });
                         await fetchIngredients();
                     } catch (error) {
                         console.error('Error updating quantity:', error);
                         alert('Failed to update quantity: ' + error.message);
                     }
                 } else if (currentQty === 1) {
-                    // If quantity is exactly 1, ask for confirmation to delete
-                    if (confirm(`The quantity is 1. Do you want to remove ${name} completely?`)) {
+                    if (confirm(`The quantity is 1. Do you want to remove this ingredient completely?`)) {
                         try {
-                            await deleteIngredient(name);
+                            await deleteIngredient(id);
                             await fetchIngredients();
                         } catch (error) {
                             console.error('Error deleting ingredient:', error);
@@ -203,10 +190,11 @@ function attachIngredientEventListeners() {
     // Delete buttons
     document.querySelectorAll('.delete-button').forEach(button => {
         button.addEventListener('click', async () => {
-            const name = button.getAttribute('data-name');
-            if (confirm(`Are you sure you want to remove ${name}?`)) {
+            const id = button.getAttribute('data-id');
+            const ingredient = currentIngredients.find(ing => ing.id === parseInt(id));
+            if (confirm(`Are you sure you want to remove ${ingredient.name}?`)) {
                 try {
-                    await deleteIngredient(name);
+                    await deleteIngredient(id);
                     await fetchIngredients();
                 } catch (error) {
                     console.error('Error deleting ingredient:', error);
@@ -243,7 +231,6 @@ const API_BASE_URL = 'http://localhost:3000/api';
 
 // Function to fetch ingredients from backend
 async function fetchIngredients() {
-    // Show loading indicator
     ingredientsList.innerHTML = '<div class="loading"></div>';
     
     try {
@@ -287,9 +274,9 @@ async function addIngredient(ingredient) {
 }
 
 // Function to update an ingredient
-async function updateIngredient(name, updates) {
+async function updateIngredient(id, updates) {
     try {
-        const response = await fetch(`${API_BASE_URL}/ingredients/${name}`, {
+        const response = await fetch(`${API_BASE_URL}/ingredients/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
@@ -310,9 +297,9 @@ async function updateIngredient(name, updates) {
 }
 
 // Function to delete an ingredient
-async function deleteIngredient(name) {
+async function deleteIngredient(id) {
     try {
-        const response = await fetch(`${API_BASE_URL}/ingredients/${name}`, {
+        const response = await fetch(`${API_BASE_URL}/ingredients/${id}`, {
             method: 'DELETE'
         });
         
@@ -321,7 +308,7 @@ async function deleteIngredient(name) {
             throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
         }
         
-        return true;
+        return await response.json();
     } catch (error) {
         console.error('Error deleting ingredient:', error);
         throw error;
@@ -330,31 +317,10 @@ async function deleteIngredient(name) {
 
 // Function to fetch recipe recommendations
 async function fetchRecipes() {
-    // Show loading indicator
     recipesList.innerHTML = '<div class="loading"></div>';
-    
-    // This is commented out for now since the recipes endpoint doesn't seem to exist in the backend
-    // Will display placeholder content instead
     setTimeout(() => {
         recipesList.innerHTML = '<p class="info">Recipe functionality will be available soon!</p>';
-    }, 500); // Short timeout to show the loading indicator
-    
-    /*
-    try {
-        const response = await fetch(`${API_BASE_URL}/recipes`);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        currentRecipes = data;
-        renderRecipes(currentRecipes);
-    } catch (error) {
-        console.error('Error fetching recipes:', error);
-        recipesList.innerHTML = '<p class="error">Failed to load recipes: ' + error.message + '</p>';
-    }
-    */
+    }, 500);
 }
 
 // Initialize the application

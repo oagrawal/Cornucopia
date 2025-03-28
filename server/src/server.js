@@ -13,25 +13,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-// app.use(cors({
-//     origin: '*', // Allow requests from any origin for development
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow all methods we need
-//     allowedHeaders: ['Content-Type', 'Authorization', 'X-Image-Format', 'X-Image-Width', 'X-Image-Height']
-// }));
-// app.use(express.json({ limit: '50mb' }));
-// app.use(express.raw({ type: ['image/jpeg', 'application/octet-stream'], limit: '50mb' }));
-
-
-// In CORS configuration, you can simplify allowed headers
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Image-Format', 'X-Image-Width', 'X-Image-Height']
-  }));
-  
-  // Keep only the JPEG content type and remove RGB565
-  app.use(express.raw({ type: ['image/jpeg'], limit: '50mb' }));
-  
+}));
+
+// Handle JSON and raw image data
+app.use(express.json());
+app.use(express.raw({ type: ['image/jpeg'], limit: '50mb' }));
 
 // Serve static files from the saved_images directory
 app.use('/images', express.static(path.join(__dirname, '..', 'saved_images')));
