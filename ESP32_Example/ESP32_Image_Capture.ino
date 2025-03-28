@@ -11,10 +11,10 @@
 // ===================
 // Network Config
 // ===================
-const char *ssid = "Banana's iPhone (2)";
-const char *password = "bananana";
-const char *serverEndpoint = "http://172.20.10.3:3000/api/image-processing";
-String serverIP = "172.20.10.3"; // Hardcoded for simplicity
+const char *ssid = "utexas-iot";
+const char *password = "10961394339849902023";
+const char *serverEndpoint = "http://10.159.64.188:3000/api/image-processing";
+String serverIP = "10.159.64.188"; // Hardcoded for simplicity
 
 
 // ===================
@@ -241,7 +241,8 @@ void captureAndSendImage(bool useFlash = false)
     if (WiFi.status() == WL_CONNECTED)
     {
         Serial.println("Sending image to server...");
-
+        
+        //create new http client for each request
         HTTPClient http;
         http.begin(serverEndpoint);
 
@@ -263,6 +264,11 @@ void captureAndSendImage(bool useFlash = false)
         // Send the data with a longer timeout upated with better retry logic
         http.setTimeout(30000); // 30 seconds timeout for larger images. consider increasing even more
 
+        //Dynamically adjust timeout based on image size
+        // int timeout = max(30000, fb->len / 50); // Base timeout on image size (50 bytes/ms)
+        // http.setTimeout(timeout);
+        // Serial.printf("Setting timeout to %d ms for %d byte image\n", timeout, fb->len);
+ 
         // Add retry logic
         int maxRetries = 3;
         int retryCount = 0;
@@ -384,6 +390,7 @@ void setup()
 
     Serial.println("Setup complete!");
 }
+
 
 void loop()
 {
