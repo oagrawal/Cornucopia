@@ -80,7 +80,11 @@ ingredientForm.addEventListener('submit', async (e) => {
         await fetchIngredients();
     } catch (error) {
         console.error('Error adding ingredient:', error);
-        alert('Failed to add ingredient: ' + error.message);
+        if (error.message.includes('duplicate key') || error.message.includes('already exists')) {
+            alert(`${newIngredient.name} is already in your fridge!`);
+        } else {
+            alert('Failed to add ingredient: ' + error.message);
+        }
     }
 });
 
@@ -139,9 +143,9 @@ function renderIngredients(ingredients) {
                     <span class="field-value">${ingredient.brand || 'N/A'}</span>
                 </div>
                 <div class="ingredient-actions">
-                    <button class="delete-button" data-id="${ingredient.id}">
-                        <span class="material-icons">delete</span> Remove
-                    </button>   
+                    <button class="delete-button" data-id="${ingredient.id}" onclick="handleDelete(${ingredient.id}, '${ingredient.name}')">
+                        <span class="material-icons">delete</span>Remove
+                    </button>
                 </div>
             </div>
         </div>
@@ -150,7 +154,7 @@ function renderIngredients(ingredients) {
 
     ingredientsList.innerHTML = headerHtml + ingredientsHtml;
     
-    // Add event listeners for the buttons
+    // Add event listeners for the quantity buttons
     attachIngredientEventListeners();
 }
 
@@ -202,23 +206,6 @@ function attachIngredientEventListeners() {
                             alert('Failed to delete ingredient: ' + error.message);
                         }
                     }
-                }
-            }
-        });
-    });
-    
-    // Delete buttons
-    document.querySelectorAll('.delete-button').forEach(button => {
-        button.addEventListener('click', async () => {
-            const id = button.getAttribute('data-id');
-            const ingredient = currentIngredients.find(ing => ing.id === parseInt(id));
-            if (confirm(`Are you sure you want to remove ${ingredient.name}?`)) {
-                try {
-                    await deleteIngredient(id);
-                    await fetchIngredients();
-                } catch (error) {
-                    console.error('Error deleting ingredient:', error);
-                    alert('Failed to delete ingredient: ' + error.message);
                 }
             }
         });
@@ -409,3 +396,16 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchIngredients();
     fetchRecipes();
 });
+
+// Add this new function for handling delete
+async function handleDelete(id, name) {
+    if (confirm(`Are you sure you want to remove ${name}?`)) {
+        try {
+            await deleteIngredient(id);
+            await fetchIngredients();
+        } catch (error) {
+            console.error('Error deleting ingredient:', error);
+            alert('Failed to delete ingredient: ' + error.message);
+        }
+    }
+}
