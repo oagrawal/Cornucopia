@@ -10,7 +10,12 @@
 <body>
     <div class="container">
         <header>
-            <h1>Smart Fridge Recipe Assistant</h1>
+            <div class="header-content">
+                <h1>Smart Fridge Recipe Assistant</h1>
+                <button id="show-add-form" class="primary-button">
+                    <span class="material-icons">add</span> Add New Ingredient
+                </button>
+            </div>
         </header>
 
         <main>
@@ -18,10 +23,6 @@
                 <h2>Available Ingredients</h2>
                 
                 <div class="add-ingredient-container">
-                    <button id="show-add-form" class="primary-button">
-                        <span class="material-icons">add</span> Add New Ingredient
-                    </button>
-                    
                     <div id="add-ingredient-form" class="hidden">
                         <h3>Add New Ingredient</h3>
                         <form id="ingredient-form">

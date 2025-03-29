@@ -38,10 +38,19 @@ header {
     padding: 1rem;
 }
 
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
 h1 {
     color: var(--primary-color);
     font-size: 2rem;
     font-weight: 600;
+    margin: 0;
 }
 
 h2 {
@@ -66,7 +75,7 @@ main {
 
 .ingredients-header {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: 2fr 2fr 1fr 2fr 2fr 1fr;
     gap: 1rem;
     padding: 1rem;
     background: var(--card-background);
@@ -105,7 +114,7 @@ main {
 
 .ingredient-content {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: 2fr 2fr 1fr 2fr 2fr 1fr;
     gap: 1rem;
     align-items: center;
 }
@@ -351,19 +360,33 @@ main {
 }
 
 .delete-button {
-    background-color: #f44336;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #ff4444;
     color: white;
     border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.delete-button:hover {
+    background-color: #cc0000;
+}
+
+.delete-button .material-icons {
+    font-size: 1.2rem;
 }
 
 .quantity-controls {
     display: flex;
     align-items: center;
     gap: 8px;
+    justify-content: flex-start;
 }
 
 .quantity-btn {
@@ -382,9 +405,10 @@ main {
 /* Update ingredient card to include buttons */
 .ingredient-actions {
     display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    border-top: 1px solid #eee;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
 }
 
 /* Chat Interface Styles */

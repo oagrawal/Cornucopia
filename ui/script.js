@@ -126,11 +126,11 @@ function renderIngredients(ingredients) {
                     <span class="field-label">Brand</span>
                     <span class="field-value">${ingredient.brand || 'N/A'}</span>
                 </div>
-            </div>
-            <div class="ingredient-actions">
-                <button class="delete-button" data-id="${ingredient.id}">
-                    <span class="material-icons">delete</span> Remove
-                </button>
+                <div class="ingredient-actions">
+                    <button class="delete-button" data-id="${ingredient.id}">
+                        <span class="material-icons">delete</span> Remove
+                    </button>   
+                </div>
             </div>
         </div>
         `;
