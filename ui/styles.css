@@ -17,7 +17,7 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
@@ -51,6 +51,31 @@ h1 {
     font-size: 2rem;
     font-weight: 600;
     margin: 0;
+}
+
+.logo {
+    max-height: 50px;
+    width: auto;
+    object-fit: contain;
+    background: transparent;
+}
+
+.nav-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.logo-nav {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.logo-nav:hover {
+    transform: scale(1.1);
 }
 
 h2 {
@@ -173,14 +198,49 @@ main {
 
 .bottom-nav {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--card-background);
+    bottom: 20px;
+    left: 20px;
     display: flex;
-    justify-content: space-around;
-    padding: 0.5rem;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.nav-options {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    background: var(--card-background);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.nav-menu:hover .nav-options {
+    display: block;
+}
+
+.nav-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.nav-option:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.nav-option .material-icons {
+    font-size: 20px;
 }
 
 .tab-button {

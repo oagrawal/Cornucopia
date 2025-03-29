@@ -11,7 +11,19 @@
     <div class="container">
         <header>
             <div class="header-content">
-                <h1>Smart Fridge Recipe Assistant</h1>
+                <div class="nav-menu">
+                    <img src="logo.svg" alt="Navigation Menu" class="logo-nav">
+                    <div class="nav-options">
+                        <div class="nav-option" data-tab="ingredients-tab">
+                            <span class="material-icons">kitchen</span>
+                            <span>Ingredients</span>
+                        </div>
+                        <div class="nav-option" data-tab="recipes-tab">
+                            <span class="material-icons">restaurant_menu</span>
+                            <span>Recipes</span>
+                        </div>
+                    </div>
+                </div>
                 <button id="show-add-form" class="primary-button">
                     <span class="material-icons">add</span> Add New Ingredient
                 </button>
@@ -82,17 +94,6 @@
                 </div>
             </div>
         </main>
-
-        <nav class="bottom-nav">
-            <button class="tab-button active" data-tab="ingredients-tab">
-                <span class="material-icons">kitchen</span>
-                <span>Ingredients</span>
-            </button>
-            <button class="tab-button" data-tab="recipes-tab">
-                <span class="material-icons">restaurant_menu</span>
-                <span>Recipes</span>
-            </button>
-        </nav>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>

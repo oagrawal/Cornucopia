@@ -1,5 +1,5 @@
 // DOM Elements
-const tabButtons = document.querySelectorAll('.tab-button');
+const navOptions = document.querySelectorAll('.nav-option');
 const tabContents = document.querySelectorAll('.tab-content');
 const ingredientsList = document.getElementById('ingredients-list');
 const recipesList = document.getElementById('recipes-list');
@@ -21,15 +21,15 @@ let currentRecipes = [];
 const sessionId = Math.random().toString(36).substring(2, 15);
 
 // Tab switching functionality
-tabButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        const tabId = button.getAttribute('data-tab');
+navOptions.forEach(option => {
+    option.addEventListener('click', () => {
+        const tabId = option.getAttribute('data-tab');
         
         // Update active states
-        tabButtons.forEach(btn => btn.classList.remove('active'));
+        navOptions.forEach(opt => opt.classList.remove('active'));
         tabContents.forEach(content => content.classList.remove('active'));
         
-        button.classList.add('active');
+        option.classList.add('active');
         document.getElementById(tabId).classList.add('active');
     });
 });
