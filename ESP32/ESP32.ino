@@ -12,9 +12,10 @@
 // Network Config
 // ===================
 const char *ssid = "utexas-iot";
-const char *password = "10961394339849902023";
-const char *serverEndpoint = "http://10.159.66.67:3000/api/image-processing";
-String serverIP = "10.159.66.67"; // Hardcoded for simplicity
+// const char *password = "10961394339849902023";
+const char *password = "10961394339849902023"; //esp3 and esp2
+const char *serverEndpoint = "http://10.159.64.189:3000/api/image-processing";
+String serverIP = "10.159.64.189"; // Hardcoded for simplicity
 
 // ===================
 // Hardware Pins

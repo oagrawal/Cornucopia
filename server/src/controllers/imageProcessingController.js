@@ -254,15 +254,44 @@ const callAIService = async (imagePath) => {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
-    const prompt = `Analyze this image and identify any food ingredients or products. If a food item is found, return a JSON object with these fields:
-    - name (string): the name of the food item
-    - category (string): one of [Cooking Essentials, Condiments and Beverages, Dairy, Sliced/Pre-Prepared Raw Ingredients, Produce, Pantry, Other]
-    - quantity (number): estimated quantity, default to 1 if unclear
-    - expiry_date (string in YYYY-MM-DD format or null): if visible in image
-    - brand (string or null): if visible in image
+    // const prompt = `Analyze this image and identify any food ingredients or products. If a food item is found, return a JSON object with these fields:
+    // - name (string): the name of the food item
+    // - category (string): one of [Cooking Essentials, Condiments and Beverages, Dairy, Sliced/Pre-Prepared Raw Ingredients, Produce, Pantry, Other]
+    // - quantity (number): estimated quantity, default to 1 if unclear
+    // - expiry_date (string in YYYY-MM-DD format or null): if visible in image
+    // - brand (string or null): if visible in image
+    // - is_food (boolean): true if this is a food item, false otherwise
+
+    // If no food item is found, return { "is_food": false, "description": "description of what you see" }`;
+
+    const prompt = `Analyze this image and identify any one food ingredients or products. If a food item is found, return a JSON object with these fields:
+    - name (string or null): the name of the food item following specific naming conventions:
+      * For branded products (excluding condiments/beverages), use generic name
+      * For produce, identify specific types when possible (e.g., "Roma Tomatoes")
+      * For condiments/beverages, use brand name only if distinctly associated
+      * For sliced/prepared ingredients, specify preparation (e.g., "Sliced Mushrooms")
+      * For unidentifiable items, use "Unknown Item"
+    
+    - category (string or null): one of [Fresh Produce, Meat and Seafood, Dairy and Eggs, Condiments and Sauces, Beverages, Pre-Packaged Meals and Snacks, Medicinal/Specialty, Fermented/Pickled, Grains/Baked Goods, Miscellaneous/Unknown]
+    
+    - quantity (number): descriptive quantity based on item type:
+      * For produce: countable items, bunched items, or packaged amounts
+      * For meat/seafood: pieces, weight, or package quantity
+      * For dairy/eggs: item count, carton size, or volume
+      * For condiments/sauces: volume, jar count, or packet count
+      * For beverages: count and volume
+      * For other categories: appropriate unit based on presentation
+    
+    - expiry_date (string in YYYY-MM-DD format or null): the expiry date of the product in YYYY-MM-DD format
+      * Based on visible dates or typical shelf life for the product type
+      * Return "null" when expiry cannot be determined
+    
+    - brand (string or null): visible brand name when applicable per naming guidelines
+    
     - is_food (boolean): true if this is a food item, false otherwise
 
     If no food item is found, return { "is_food": false, "description": "description of what you see" }`;
+
 
     const imagePart = {
       inlineData: {
