@@ -389,8 +389,23 @@ chatInput.addEventListener('keypress', (e) => {
 });
 
 // Add initial bot message
-addMessage('Hello! I\'m your recipe assistant. I can help you find recipes based on your available ingredients. What would you like to know?');
+addMessage(`## 👨‍🍳 Welcome to Your Personal Sous-Chef! 🥗
 
+    Hello! I'm your culinary assistant, ready to help you create delicious meals. 🍽️
+    
+    I can assist you with:
+    - Finding recipes based on your available ingredients 🧺
+    - Accommodating dietary preferences and restrictions:
+      - 🥕 Vegetarian
+      - 🌱 Vegan
+      - 💪 Protein-rich
+      - 🌾 Gluten-free
+    - Exploring healthier cooking options 🥦
+    
+    Let's get cooking! 🔪
+    
+    How may I help you today?`);
+    
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
     fetchIngredients();
