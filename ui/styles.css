@@ -692,4 +692,63 @@ main {
 
 .model-info:hover .model-tooltip {
     display: block;
+}
+
+.category-text {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Category Colors */
+.category-fresh-produce {
+    color: #2E7D32;
+    background: rgba(46, 125, 50, 0.1);
+}
+
+.category-meat-and-seafood {
+    color: #C62828;
+    background: rgba(198, 40, 40, 0.1);
+}
+
+.category-dairy-and-eggs {
+    color: #1565C0;
+    background: rgba(21, 101, 192, 0.1);
+}
+
+.category-condiments-and-sauces {
+    color: #F57C00;
+    background: rgba(245, 124, 0, 0.1);
+}
+
+.category-beverages {
+    color: #6A1B9A;
+    background: rgba(106, 27, 154, 0.1);
+}
+
+.category-pre-packaged-meals-and-snacks {
+    color: #00838F;
+    background: rgba(0, 131, 143, 0.1);
+}
+
+.category-medicinal-specialty {
+    color: #D81B60;
+    background: rgba(216, 27, 96, 0.1);
+}
+
+.category-fermented-pickled {
+    color: #827717;
+    background: rgba(130, 119, 23, 0.1);
+}
+
+.category-grains-baked-goods {
+    color: #8D6E63;
+    background: rgba(141, 110, 99, 0.1);
+}
+
+.category-miscellaneous {
+    color: #546E7A;
+    background: rgba(84, 110, 122, 0.1);
 } 

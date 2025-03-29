@@ -152,6 +152,23 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString();
 }
 
+// Function to get category class name
+function getCategoryClassName(category) {
+    const categoryMap = {
+        'Fresh Produce': 'fresh-produce',
+        'Meat and Seafood': 'meat-and-seafood',
+        'Dairy and Eggs': 'dairy-and-eggs',
+        'Condiments and Sauces': 'condiments-and-sauces',
+        'Beverages': 'beverages',
+        'Pre-Packaged Meals and Snacks': 'pre-packaged-meals-and-snacks',
+        'Medicinal/Specialty': 'medicinal-specialty',
+        'Fermented/Pickled': 'fermented-pickled',
+        'Grains/Baked Goods': 'grains-baked-goods'
+    };
+    
+    return categoryMap[category] || 'miscellaneous';
+}
+
 // Function to render ingredients
 function renderIngredients(ingredients) {
     if (!ingredients || ingredients.length === 0) {
@@ -171,6 +188,7 @@ function renderIngredients(ingredients) {
     `;
 
     const ingredientsHtml = ingredients.map(ingredient => {
+        const categoryClass = getCategoryClassName(ingredient.category);
         return `
         <div class="ingredient-card" data-id="${ingredient.id}">
             <div class="ingredient-content">
@@ -180,7 +198,7 @@ function renderIngredients(ingredients) {
                 </div>
                 <div class="ingredient-field">
                     <span class="field-label">Category</span>
-                    <span class="field-value ${ingredient.category ? ingredient.category.toLowerCase().replace(/\s+/g, '-') : ''}">${ingredient.category || 'N/A'}</span>
+                    <span class="field-value category-text category-${categoryClass}">${ingredient.category || 'N/A'}</span>
                 </div>
                 <div class="ingredient-field">
                     <span class="field-label">Quantity</span>
