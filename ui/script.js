@@ -20,6 +20,64 @@ let currentRecipes = [];
 // Generate a unique session ID
 const sessionId = Math.random().toString(36).substring(2, 15);
 
+// Add model selector elements
+const modelSelect = document.getElementById('model-select');
+const modelTooltip = document.querySelector('.model-tooltip');
+
+// Model descriptions
+const MODEL_INFO = {
+    'gemini-2.5-pro-exp-03-25': {
+        name: 'Gemini 2.5 Pro Experimental',
+        description: 'Enhanced thinking and reasoning, multimodal understanding, advanced coding capabilities',
+        inputs: 'Audio, images, videos, and text',
+        output: 'Text'
+    },
+    'gemini-2.0-flash': {
+        name: 'Gemini 2.0 Flash',
+        description: 'Next generation features, speed, thinking, realtime streaming, and multimodal generation',
+        inputs: 'Audio, images, videos, and text',
+        output: 'Text, images (experimental), and audio (coming soon)'
+    },
+    'gemini-2.0-flash-lite': {
+        name: 'Gemini 2.0 Flash-Lite',
+        description: 'Cost efficiency and low latency',
+        inputs: 'Audio, images, videos, and text',
+        output: 'Text'
+    },
+    'gemini-1.5-flash': {
+        name: 'Gemini 1.5 Flash',
+        description: 'Fast and versatile performance across a diverse variety of tasks',
+        inputs: 'Audio, images, videos, and text',
+        output: 'Text'
+    },
+    'gemini-1.5-flash-8b': {
+        name: 'Gemini 1.5 Flash-8B',
+        description: 'High volume and lower intelligence tasks',
+        inputs: 'Audio, images, videos, and text',
+        output: 'Text'
+    },
+    'gemini-1.5-pro': {
+        name: 'Gemini 1.5 Pro',
+        description: 'Complex reasoning tasks requiring more intelligence',
+        inputs: 'Audio, images, videos, and text',
+        output: 'Text'
+    }
+};
+
+// Update tooltip content on model selection
+modelSelect.addEventListener('change', () => {
+    const selectedModel = MODEL_INFO[modelSelect.value];
+    modelTooltip.innerHTML = `
+        <strong>${selectedModel.name}</strong><br>
+        ${selectedModel.description}<br><br>
+        <strong>Inputs:</strong> ${selectedModel.inputs}<br>
+        <strong>Output:</strong> ${selectedModel.output}
+    `;
+});
+
+// Set initial tooltip content
+modelSelect.dispatchEvent(new Event('change'));
+
 // Update tab switching logic
 document.querySelectorAll('.nav-link').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -363,7 +421,8 @@ async function sendMessage() {
             },
             body: JSON.stringify({ 
                 message,
-                sessionId 
+                sessionId,
+                model: modelSelect.value // Add selected model to the request
             }),
         });
 

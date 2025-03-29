@@ -4,13 +4,13 @@ const db = require('../config/db');
 // Initialize with API key directly
 const genAI = new GoogleGenAI({ apiKey: "AIzaSyDV4jl7YN27V38CuQ8QBnHMCZ54Bo4atyw"});
 
-// Store chat sessions
+// Store chat sessions with their models
 const chatSessions = new Map();
 
 const chatController = {
     async getChatResponse(req, res) {
         try {
-            const { message, sessionId } = req.body;
+            const { message, sessionId, model } = req.body;
             
             // Get all ingredients from database
             const ingredientsResult = await db.query('SELECT * FROM ingredients');
@@ -21,9 +21,16 @@ const chatController = {
             
             // Get or create chat session
             let chat;
-            if (!chatSessions.has(sessionId)) {
+            const selectedModel = model || "gemini-2.0-flash-lite"; // Default to 2.0 Flash if no model specified
+
+            // Check if we need to create a new chat session or if the model has changed
+            const existingSession = chatSessions.get(sessionId);
+            const needNewSession = !existingSession || 
+                                 (existingSession.model !== selectedModel);
+
+            if (needNewSession) {
                 chat = await genAI.chats.create({
-                    model: "gemini-2.0-flash",
+                    model: selectedModel,
                     history: [
                         {
                             role: "user",
@@ -35,9 +42,10 @@ const chatController = {
                         },
                     ],
                 });
-                chatSessions.set(sessionId, chat);
+                // Store both the chat instance and the model used
+                chatSessions.set(sessionId, { chat, model: selectedModel });
             } else {
-                chat = chatSessions.get(sessionId);
+                chat = existingSession.chat;
             }
             
             // Send message and get response
@@ -52,7 +60,8 @@ const chatController = {
             
             res.json({ 
                 success: true, 
-                response: fullResponse 
+                response: fullResponse,
+                model: selectedModel // Return the model being used
             });
         } catch (error) {
             console.error('Error in chat controller:', error);
