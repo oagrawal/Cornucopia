@@ -20,19 +20,31 @@ let currentRecipes = [];
 // Generate a unique session ID
 const sessionId = Math.random().toString(36).substring(2, 15);
 
-// Tab switching functionality
-navOptions.forEach(option => {
-    option.addEventListener('click', () => {
-        const tabId = option.getAttribute('data-tab');
+// Update tab switching logic
+document.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tabId = link.getAttribute('data-tab');
         
-        // Update active states
-        navOptions.forEach(opt => opt.classList.remove('active'));
-        tabContents.forEach(content => content.classList.remove('active'));
-        
-        option.classList.add('active');
+        // Update active tab
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
         document.getElementById(tabId).classList.add('active');
+        
+        // Update active nav link
+        document.querySelectorAll('.nav-link').forEach(navLink => {
+            navLink.classList.remove('active');
+        });
+        link.classList.add('active');
     });
 });
+
+// Set initial active state
+const initialTab = document.querySelector('.nav-link[data-tab="ingredients-tab"]');
+if (initialTab) {
+    initialTab.classList.add('active');
+}
 
 // Show/hide add ingredient form
 showAddFormBtn.addEventListener('click', () => {

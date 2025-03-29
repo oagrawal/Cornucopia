@@ -4,25 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Fridge Recipe Assistant</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
             <div class="header-content">
-                <div class="nav-menu">
-                    <img src="logo.svg" alt="Navigation Menu" class="logo-nav">
-                    <div class="nav-options">
-                        <div class="nav-option" data-tab="ingredients-tab">
-                            <span class="material-icons">kitchen</span>
-                            <span>Ingredients</span>
-                        </div>
-                        <div class="nav-option" data-tab="recipes-tab">
-                            <span class="material-icons">restaurant_menu</span>
-                            <span>Recipes</span>
-                        </div>
-                    </div>
+                <div class="nav-left">
+                    <img src="logo.svg" alt="Logo" class="logo-nav">
+                    <nav class="main-nav">
+                        <a href="#" class="nav-link" data-tab="ingredients-tab">Ingredients</a>
+                        <a href="#" class="nav-link" data-tab="recipes-tab">Recipes</a>
+                    </nav>
                 </div>
                 <button id="show-add-form" class="primary-button">
                     <span class="material-icons">add</span> Add New Ingredient
