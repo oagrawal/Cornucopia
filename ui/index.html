@@ -67,9 +67,17 @@
             </div>
 
             <div id="recipes-tab" class="tab-content">
-                <h2>Recommended Recipes</h2>
-                <div class="recipes-grid" id="recipes-list">
-                    <!-- Recipes will be dynamically populated here -->
+                <h2>Recipe Assistant</h2>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <!-- Chat messages will be dynamically populated here -->
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-input" placeholder="Ask about recipes or ingredients...">
+                        <button id="send-message" class="primary-button">
+                            <span class="material-icons">send</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -85,6 +93,7 @@
             </button>
         </nav>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html> 

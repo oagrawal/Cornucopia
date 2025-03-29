@@ -8,9 +8,17 @@ const addIngredientForm = document.getElementById('add-ingredient-form');
 const ingredientForm = document.getElementById('ingredient-form');
 const cancelAddBtn = document.getElementById('cancel-add');
 
+// Chat functionality
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const sendMessageBtn = document.getElementById('send-message');
+
 // State management
 let currentIngredients = [];
 let currentRecipes = [];
+
+// Generate a unique session ID
+const sessionId = Math.random().toString(36).substring(2, 15);
 
 // Tab switching functionality
 tabButtons.forEach(button => {
@@ -322,6 +330,67 @@ async function fetchRecipes() {
         recipesList.innerHTML = '<p class="info">Recipe functionality will be available soon!</p>';
     }, 500);
 }
+
+// Chat functionality
+function addMessage(message, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+    
+    // If it's a user message, just use text, otherwise parse markdown
+    if (isUser) {
+        messageDiv.textContent = message;
+    } else {
+        // Parse markdown and set as HTML
+        messageDiv.innerHTML = marked.parse(message);
+    }
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function sendMessage() {
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    // Add user message to chat
+    addMessage(message, true);
+    chatInput.value = '';
+
+    try {
+        const response = await fetch('http://localhost:3000/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                message,
+                sessionId 
+            }),
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            addMessage(data.response);
+        } else {
+            addMessage('Sorry, I encountered an error. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        addMessage('Sorry, I encountered an error. Please try again.');
+    }
+}
+
+// Event listeners for chat
+sendMessageBtn.addEventListener('click', sendMessage);
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
+
+// Add initial bot message
+addMessage('Hello! I\'m your recipe assistant. I can help you find recipes based on your available ingredients. What would you like to know?');
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {

@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const ingredientRoutes = require('./routes/ingredientRoutes');
 const imageProcessingRoutes = require('./routes/imageProcessingRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 require('dotenv').config();
 
 // Import database connection
@@ -194,6 +195,7 @@ Node Version: ${process.version}</pre>
 // Routes
 app.use('/api/ingredients', ingredientRoutes);
 app.use('/api/image-processing', imageProcessingRoutes);
+app.use('/api', chatRoutes);
 
 // Basic error handling
 app.use((err, req, res, next) => {
