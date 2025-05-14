@@ -1,4 +1,5 @@
-![image](https://github.com/user-attachments/assets/c342c5f0-4212-414d-b060-689464ed25f0)
+
+![image](https://github.com/user-attachments/assets/d125c63b-8afe-441f-8716-39c853f83d69)
 
 # Cornucopia - Smart Fridge Inventory System
 
