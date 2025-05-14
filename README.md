@@ -41,3 +41,6 @@ Om Agrawal, Adarsh Pulasseri, and Tanai Prathapam
 
 ## Acknowledgments
 Special thanks to IEEE UT Austin and Arm for hosting this Techathon and providing the opportunity to develop this project.
+
+Pitch Deck:
+[Jester Jumper Jables.pdf](https://github.com/user-attachments/files/20214701/Jester.Jumper.Jables.pdf)
