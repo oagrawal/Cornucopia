@@ -1,14 +1,12 @@
+![image](https://github.com/user-attachments/assets/c342c5f0-4212-414d-b060-689464ed25f0)
+
 # Cornucopia - Smart Fridge Inventory System
 
 I'm very excited to share that our project, Cornucopia, won 1st place and Best Use of Generative AI at IEEE UT's month-long Techathon!
 
 ![image](https://github.com/user-attachments/assets/62ce8a60-ea69-4b68-8335-c6866445e258)
 
-Cornucopia is an intelligent system that automatically tracks your fridge inventory using computer vision and AI, helping you manage groceries, reduce food waste, and discover recipes based on what you already have. Our project won 1st place and Best Use of Generative AI at the IEEE UT Austin Techathon.
-
-## Project Overview
-
-Cornucopia uses a network of modular devices and Vision-Language models to convert food images into structured inventory data. The system features a Sous-Chef virtual assistant that recommends recipes, provides nutritional guidance, and suggests grocery purchases based on your current inventory.
+Cornucopia automatically tracks fridge inventory using a network of modular devices and Vision-Language models that convert food images into database updates. Our system also includes a Sous-Chef virtual assistant that uses built-in context about fridge inventory to recommend recipes, provide nutritional advice, and suggest grocery purchases.
 
 ## Key Features
 
@@ -29,13 +27,26 @@ Cornucopia uses a network of modular devices and Vision-Language models to conve
 - Suggests timely grocery purchases to complement your inventory
 - Supports various dietary restrictions (vegetarian, vegan, gluten-free)
 
-## Technology Stack
+## Software System Design
+![image](https://github.com/user-attachments/assets/57d5364b-aa90-4fcc-8361-4129a15ea3eb)
 
-- **Vision AI**: Advanced image recognition for food identification
-- **Generative AI**: Gemini models for intelligent recipe suggestions
-- **Hardware**: Network of modular sensing devices
-- **Database**: Structured schema for efficient inventory tracking
+![image](https://github.com/user-attachments/assets/35925c1b-dce4-4913-a7e2-37f5feb3fbe5)
 
+![image](https://github.com/user-attachments/assets/b61d60fa-48da-4458-9ae7-d2652f4f79b5)
+
+## AI Features
+1) Custom Model Context Protocol
+2) Customizable Recipe Generation
+3) Multiple Models Supported
+
+## Electronics
+![image](https://github.com/user-attachments/assets/e198eb28-9d90-4b97-9f92-8fffe42a64cc)
+
+
+## Physical Design
+![image](https://github.com/user-attachments/assets/c18fc749-8397-41d9-ab32-e27b42c719c5)
+
+  
 ## Team
 Om Agrawal, Adarsh Pulasseri, and Tanai Prathapam
 
