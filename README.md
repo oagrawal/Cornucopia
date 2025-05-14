@@ -2,7 +2,7 @@
 
 # Cornucopia — Smart Fridge Inventory System
 
-I'm excited to share that our project, **Cornucopia**, won **1st Place** and **Best Use of Generative AI** at IEEE UT's month-long Techathon.
+> 🏆 **We’re proud to share that _Cornucopia_ won _**1st Place**_ and _**Best Use of Generative AI**_ at _**IEEE UT's month-long Techathon**_!**
 
 > ![Award Photo](https://github.com/user-attachments/assets/62ce8a60-ea69-4b68-8335-c6866445e258)
 
